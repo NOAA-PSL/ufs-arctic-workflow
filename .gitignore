@@ -1,0 +1,13 @@
+# Python ignores
+__pychache__/
+
+# Vim ignores
+*.swp
+
+# Input file ignores
+ocn_prep/inputs/*
+*.nc
+
+# Output file ignores
+ocn_prep/outputs/*
+ocn_prep/intercom/*
