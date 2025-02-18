@@ -16,16 +16,15 @@ Alternatively, the [UFS model] (https://github.com/ufs-community/ufs-weather-mod
 * Following the workflow in HAFS, generate boundary conditions for the Arctic domain
 * Modify the simple test case from (1) to run with the Arctic domain
 * Adjust the configuration to include CICE6
+
 ## Guides
 ### Generating MOM6 input files
-1. Find the required files from (Hera)
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/`
-2. Copy all files to your working input file generation directory.
-3. Check that `fix/` contains the mesh you wish to use.
-4. Check `run_init.sh` has the environment variables set
-5. Run: `./run_init.sh`
-6. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
-7. Replace `MOM_input` in your model run directory with the version in `intercom/`
+1. Find the required files from the `ocn_prep` directory in this repository.
+2. Check that `fix/` contains the mesh you wish to use (Note: Arctic MOM6 files can also be found on Gaea:`/gpfs/f5/cefi/world-shared/ARC12_pub/GRID` or Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
+3. Check `run_init.sh` has the environment variables set
+4. Run: `./run_init.sh`
+5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
+6. Replace `MOM_input` in your model run directory with the version in `intercom/`
 
 **Note**: You can use the following run directory: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_mesh_test/`
 
@@ -48,7 +47,9 @@ This directory contains the files that need to be sent to the model run director
 This directory contains namelists and houses input files obtained while gathering the RTOFS and GFS input datasets for remapping.
 
 ### Generating ESMF mesh from MOM6 mask file
-1. Find the required files from (Hera) `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_testing/mesh_generation/`
+This is for generating the meshes necessary to run with MOM6 in UFS based on existing MOM6 grid files.
+Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be found on Gaea at `/gpfs/f5/cefi/world-shared/ARC12_pub/GRID`.
+1. Find the required files in `mom6_mesh_generation` (or on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_testing/mesh_generation/`)
 2. Copy both files to the directory containing an ocean mask file.
 * *Note*: This requires an `ocean_mask.nc` file containing longitude and latitude variables `x(ny,nx)` and `y(ny,nx)`, respectively. 
 * If you have these variables but with different names, edit the `gen_scrip.ncl` file lines 42 and 48 to the correct variable names.
