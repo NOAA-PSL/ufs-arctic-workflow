@@ -18,6 +18,19 @@ Alternatively, the [UFS model] (https://github.com/ufs-community/ufs-weather-mod
 * Adjust the configuration to include CICE6
 
 ## Guides
+### Running Test Cases (on Hera)
+These are existing run directories.
+1. Recursively copy all files from the directory on Hera to your working directory
+* Regional Static Atm + MOM6 (HAFS Atlantic grid):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
+* Arctic MOM6 Mesh Test:
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/mom6_arctic_mesh_test/`
+* Arctic ATM and Arctic MOM6 Test:
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_ocn_atm_test`
+2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
+3. Run the code:
+`sbatch job_card`
+
 ### Generating MOM6 input files
 1. Find the required files from the `ocn_prep` directory in this repository.
 2. Check that `fix/` contains the mesh you wish to use (Note: Arctic MOM6 files can also be found on Gaea:`/gpfs/f5/cefi/world-shared/ARC12_pub/GRID` or Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
@@ -73,16 +86,6 @@ Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be
 4. Run `./mom6_init.sh`
 5. Copy the output file (by default, this will be named mom6_init.nc) to your run’s `INPUT/` directory. Edit `MOM_input` in the run directory to contain the new IC file and variable names.
 
-### Running Test Cases (on Hera)
-1. Recursively copy all files from the directory on Hera to your working directory
-* Regional Static Atm + MOM6 (HAFS Atlantic grid):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
-* Arctic MOM6 Mesh Test:
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_mesh_test/`
-2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
-3. Run the code:
-`sbatch job_card`
-
 ### Setting up new regional static atm+ocn test case
 This explains how to set up a new test case from an existing regression test in the ufs-weather-model repository. If you just want to get it running quickly on Hera, use the run guide above.
 
@@ -124,7 +127,7 @@ Remove all references to wave model:
 * Delete `wav_use_data_first_import = .true.` line
 * Delete entire `# WAV #` section
 * Delete all WAV-related steps in `# Run Sequence #`
-* Fix petlist_bounds to:
+* Fix `petlist_bounds` to:
 ```
 MED_petlist_bounds:             0 119
 ATM_petlist_bounds:             0 239
@@ -143,5 +146,3 @@ ncks -d ntiles,0,0 C96_mosaic.nc C96_mosaic.nc
 ncks -x -v contact_index,contacts C96_mosaic.nc C96_mosaic.nc
 ```
 13. Run `sbatch job_card` and check if the output files show a successfully completed run.
-
-
