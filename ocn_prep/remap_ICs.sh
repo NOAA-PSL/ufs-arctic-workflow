@@ -9,7 +9,8 @@
 #   This script is called by the setup script, but can be run in isolation
 ###
 
-APRUNS="srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"
+# !!! EDIT srun details if needed
+APRUNS=${APRUNS-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"}
 
 INPUT_DIR=${INPUT_DIR-"inputs/"}
 FIX_DIR=${FIX_DIR-"fix/mom6_arctic_grid/"}

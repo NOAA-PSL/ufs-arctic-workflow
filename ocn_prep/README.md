@@ -47,4 +47,3 @@ NOTE: This is setup to run on Hera. If you are on another system, check `run_ini
 
 4. `rtofs_to_mom6.py`
     This contains the main remapping logic. It is called by the `remap_*.sh` scripts.
-
