@@ -7,9 +7,9 @@ The UFS-Arctic requires the following pieces:
 * A regional Arctic mesh and other required input files
 * Workflow for generating boundary conditions for the regional domain
 
-[HAFS (Hurricane Analysis and Forecast System)] (https://github.com/hafs-community/HAFS.git), which uses the UFS framework, already contains some of the pieces we need for setting up regional configurations and boundary conditions. However, it does not come with any Arctic meshes, nor does it run with CICE6. It also includes some extra capabilities that we do not need (such as storm-following nests)
+[HAFS (Hurricane Analysis and Forecast System)](https://github.com/hafs-community/HAFS.git), which uses the UFS framework, already contains some of the pieces we need for setting up regional configurations and boundary conditions. However, it does not come with any Arctic meshes, nor does it run with CICE6. It also includes some extra capabilities that we do not need (such as storm-following nests)
 
-Alternatively, the [UFS model] (https://github.com/ufs-community/ufs-weather-model.git) does have a compile flag (S2S) and regression tests to set up a coupled FV3+MOM6+CICE6 run *globally*, but this setup does not yet include a regional configuration. However, within UFS there are regional HAFS regression tests (that do not include CICE6) which we can start working from.
+Alternatively, the [UFS model](https://github.com/ufs-community/ufs-weather-model.git) does have a compile flag (S2S) and regression tests to set up a coupled FV3+MOM6+CICE6 run *globally*, but this setup does not yet include a regional configuration. However, within UFS there are regional HAFS regression tests (that do not include CICE6) which we can start working from.
 ### Current Plan:
 * With UFS, set up a simple static regional FV3+MOM6 test case using the default North Atlantic domain included in the HAFS regression test cases
 * Set up a MOM6 mesh located over the Arctic ocean
@@ -71,7 +71,7 @@ Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be
 `sbatch mesh_gen_job.sh`
 
 ### Generating a MOM6 Mask File
-1. Use [FRE-NCtools] (https://github.com/NOAA-GFDL/FRE-NCtools.git) command:
+1. Use [FRE-NCtools](https://github.com/NOAA-GFDL/FRE-NCtools.git) command:
 `make_quick_mosaic --input_mosaic input_mosaic.nc [--mosaic_name mosaic_name] [--ocean_topog ocean_topog.nc] [--sea_level #] [--reproduce_siena] [--land_frac_file frac_file] [--land_frac_field frac_field]`
 2. Make note of the sea level chosen in this step! 0 is the default if it is not specified. You will need to make sure this value is consistent with `MASKING_DEPTH` variable in `MOM_input`
 
