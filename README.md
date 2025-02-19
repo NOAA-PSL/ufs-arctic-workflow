@@ -163,11 +163,11 @@ See generated files for the existing MOM6 Arctic test case on Hera here: `/scrat
 These must be generated based on the MOM6 mesh and can be done with the [UFS_Utils](https://github.com/ufs-community/UFS_UTILS) `cpld_gridgen` utility.
 
 This requires the following files:
-* `grid.nml` namelist file
+* `grid.nml` namelist file (see example on Here here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development    /cice6_grid_gen/grid.nml`)
 * `ocean_hgrid.nc` MOM6 supergrid file
 * `ocean_topog.nc` MOM6 bathymetry file
 * `ocean_mask.nc` MOM6 landmask file
 * `topo_edit.nc` The program may attempt to read in a topographic edit file even if it is not used (example of an empty topo edit file can be found here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/ARC12/GRID/empty_topo_edit.nc`)
 * FV3 input files (mesh, mosaic, etc)
 
-See an example of the `cpld_gridgen` namelist file on Hera here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/cice6_grid_gen/grid.nml`
+Running `cpld_gridgen` will generate the first of the two grid files. The second can be generated from the first using the command `ncks -O -v kmt grid_cice_NEMS_mx{res}.nc kmtu_cice_NEMS_mx{res}.nc` (for whichever resolution, `{res}`, was specified in the namelist file.)
