@@ -151,7 +151,7 @@ ncks -x -v contact_index,contacts C96_mosaic.nc C96_mosaic.nc
 Currently, there is no testcase using CICE6. Below are some points to consider when setting up CICE6:
 * Grid files for CICE6 must be generated based on the MOM6 ocean grid being used (see below)
 * Existing forecast datasets may be in CICE4 which will need to be converted to CICE6
-* The initial conditions contain many variables, and care will need to be taken to remap correctly while maintining the correct classifications of different cells. 
+* The initial conditions contain many variables, and care will need to be taken to remap correctly while maintaining the correct classifications of different cells. 
 
 ### Generating CICE6 grid files
 The following grid files are needed to run CICE6:
@@ -170,4 +170,4 @@ This requires the following files:
 * `topo_edit.nc` The program may attempt to read in a topographic edit file even if it is not used (example of an empty topo edit file can be found here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/ARC12/GRID/empty_topo_edit.nc`)
 * FV3 input files (mesh, mosaic, etc)
 
-See an example of the `cpld_gridgen` namelist file on Hera here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/cice6_grid_gengrid.nml`
+See an example of the `cpld_gridgen` namelist file on Hera here: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/cice6_grid_gen/grid.nml`
