@@ -32,14 +32,13 @@ These are existing run directories.
 `sbatch job_card`
 
 ### Generating MOM6 input files
+If you have an existing run directory set up (e.g., see previous section), then this is the process for generating initial condition files for the run.
 1. Go to the `ocn_prep` directory.
 2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
 3. Check `run_init.sh` has the environment variables set
 4. Run: `./run_init.sh`
 5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
 6. Replace `MOM_input` in your model run directory with the version in `intercom/`
-
-**Note**: You can use the following run directory: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_mesh_test/`
 
 #### Notes on directory files:
 * `run_init.sh`
