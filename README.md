@@ -32,8 +32,8 @@ These are existing run directories.
 `sbatch job_card`
 
 ### Generating MOM6 input files
-1. Find the required files from the `ocn_prep` directory in this repository.
-2. Check that `fix/` contains the mesh you wish to use (Note: Arctic MOM6 files can also be found on Gaea:`/gpfs/f5/cefi/world-shared/ARC12_pub/GRID` or Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
+1. Go to the `ocn_prep` directory.
+2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
 3. Check `run_init.sh` has the environment variables set
 4. Run: `./run_init.sh`
 5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
