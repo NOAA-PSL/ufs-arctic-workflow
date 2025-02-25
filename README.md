@@ -20,7 +20,7 @@ Alternatively, the [UFS model](https://github.com/ufs-community/ufs-weather-mode
 ## Guides
 ### Running Test Cases (on Hera)
 These are existing run directories.
-1. Recursively copy all files from the directory on Hera to your working directory
+1. Recursively copy all files from the directory on Hera to your working directory.
 * Regional Static Atm + MOM6 (HAFS Atlantic grid):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
 * Arctic MOM6 Mesh Test:
@@ -28,17 +28,22 @@ These are existing run directories.
 * Arctic ATM and Arctic MOM6 Test:
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_ocn_atm_test`
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
-3. Run the code:
-`sbatch job_card`
+3. Run `sbatch job_card`
 
 ### Generating MOM6 input files
 If you have an existing run directory set up (e.g., see previous section), then this is the process for generating initial condition files for the run.
 1. Go to the `ocn_prep` directory.
-2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`)
-3. Check `run_init.sh` has the environment variables set
-4. Run: `./run_init.sh`
+2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`).
+3. Check `run_init.sh` has the environment variables set.
+4. Run: `./run_init.sh`.
 5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
-6. Replace `MOM_input` in your model run directory with the version in `intercom/`
+6. Replace `MOM_input` in your model run directory with the version in `intercom/`.
+
+### Generating Atmospheric input files
+1. Go to the `atm_prep` directory.
+2. Check `config.in` file for any necessary changes to file locations or other variables.
+3. Run `./run_atm_prep.sh`.
+4. Copy all netcdf files from `intercom/chgres` into your model run `INPUT` directory.
 
 #### Notes on directory files:
 * `run_init.sh`
