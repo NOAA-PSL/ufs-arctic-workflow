@@ -22,6 +22,7 @@ Table of Contents
 =================
 - [Guides](#guides)
   - [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera)
+  - [Generating all Initial and Boundary Inputs](#generating-all-initial-and-boundary-inputs)
   - [Generating MOM6 Initial and Boundary Inputs](#generating-mom6-initial-and-boundary-inputs)
   - [Generating FV3 Initial and Boundary Inputs](#generating-fv3-initial-and-boundary-inputs)
   - [Generating ESMF mesh from MOM6 mask file](#generating-esmf-mesh-from-mom6-mask-file)
@@ -47,9 +48,16 @@ These are existing run directories containing all inputs needed to run the corre
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
 
+Generating all Initial and Boundary Inputs
+------------------------------------------
+This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
+1. In the main directory, check the `config.in` file for accessible file locations and correct account information.
+2. Run `./run_all_prep`
+3. Output files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
+
 Generating MOM6 Initial and Boundary Inputs
 -------------------------------------------
-This will create ocean inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
+This will create only the ocean inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. Go to the `ocn_prep` directory.
 2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`).
 3. Check `run_init.sh` has the environment variables set.
@@ -57,9 +65,9 @@ This will create ocean inputs that can be placed into an existing run directory 
 5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
 6. Replace `MOM_input` in your model run directory with the version in `intercom/`.
 
-Generating FV3 Initial and Boundary Inputs
+Generating only FV3 Initial and Boundary Inputs
 ------------------------------------------
-This will create atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
+This will create only the atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. Go to the `atm_prep` directory.
 2. Check `config.in` file for any necessary changes to file locations or other variables.
 3. Run `./run_atm_prep.sh`.
