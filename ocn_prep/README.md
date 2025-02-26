@@ -1,20 +1,25 @@
-# Description
+Description
+===========
 Contact: Kristin Barton (Kristin.Barton@noaa.gov)
 
 These scripts will generate IC and lateral BCs for the MOM6 Arctic domain
 based on RTOFS input datasets found in the HAFS test case repositories.
 It has currently been tested for 2020-08-25, single forecast cycle run.
 
-# How to run
+How to run
+==========
 1. Copy MOM6 mesh files from (Hera): `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix` into the repositories's `fix` directory
 2. Edit the initial parameters in the `run_init.sh` file for your system/account
 3. Run: `./run_init.sh`
 
-# Repository information
-
-## Directories
+Directories
+===========
 * `fix`:
-    Contains necessary MOM6 Arctic grid files.
+    Contains necessary MOM6 Arctic grid files:
+    * `ocean_hgrid.nc`
+    * `ocean_mask.nc`
+    * `ocean_vgrid.nc`
+    If the `ocean_hgrid_00*.nc` are missing, find `extract_edges.py` in `utils/` directory, link to it in directory containing above files, and run.
 
 * `intercom`:
     Contains all output files. Copy these into your model run INPUT/ directory.

@@ -1,13 +1,19 @@
 # Python ignores
-__pychache__/
+*pychache*
 
 # Vim ignores
 *.swp
 
 # Input file ignores
-ocn_prep/inputs/*
+ocn_prep/fix/
+atm_prep/atm_ic/
+atm_prep/atm_lbc/
 *.nc
+*.a
+*.b
 
 # Output file ignores
-ocn_prep/outputs/*
-ocn_prep/intercom/*
+ocn_prep/outputs/
+ocn_prep/intercom/
+atm_prep/intercom/
+*.log

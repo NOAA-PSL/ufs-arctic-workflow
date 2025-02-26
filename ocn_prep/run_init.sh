@@ -37,8 +37,9 @@ export APRUNS=${APRUNS:-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 -
 
 # !!! Edit for your working directory (where the initial files will be placed) !!!
 #export WORKhafs=${WORKhafs:-"/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/ocn_prep_test/ocn_prep/cleanup/ocn_prep"}
+export OCNgrid="ARC12"
 export WORKdir=$(pwd)
-export FIXdir=${WORKdir}/fix/mom6_arctic_grid/
+export FIXdir=${WORKdir}/fix/${OCNgrid}/
 
 # !!! Edit for your local dataset locations !!!
 # These can be found by checking the relevant system.conf file in the parm/ directory of the HAFS repository.
@@ -102,6 +103,10 @@ FHR3=$( printf "%03d" "$FHR" )
 # ----------------------------------------------------------------------------------- #
 #                                     IC Setup                                        #
 # ----------------------------------------------------------------------------------- #
+
+# Retrive the regridding weights and ocean grid files
+mkdir -p ${FIXdir}
+${NLN} /scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCNgrid}/input_files/* ${FIXdir}/.
 
 cd ${WORKdir}/inputs/
 
