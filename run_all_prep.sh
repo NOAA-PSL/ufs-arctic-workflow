@@ -27,4 +27,5 @@ mv ${WORKatm}/intercom/chgres/*.nc ${WORKdir}/intercom/.
 cd ${WORKocn}
 ./run_init.sh
 
-mv ${WORKocn}/intercom/* ${WORKdir}/intercom/.
+mv ${WORKocn}/intercom/*.nc ${WORKdir}/intercom/.
+cp ${WORKocn}/intercom/MOM_input ${WORKdir}/intercom/.
