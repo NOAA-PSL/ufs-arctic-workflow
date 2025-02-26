@@ -1,37 +1,55 @@
-# UFS-Arctic Documentation
-## Description
+UFS Arctic Workflow
+===================
 The UFS-Arctic project aims to set up a regional coupled atmosphere-ocean-sea-ice Arctic forecasting configuration in the UFS framework. 
 
 The UFS-Arctic requires the following pieces:
 * UFS coupled regional configuration with FV3, MOM6, and CICE6
 * A regional Arctic mesh and other required input files
-* Workflow for generating boundary conditions for the regional domain
+* Workflow for generating boundary conditions for the regional domain 
 
 [HAFS (Hurricane Analysis and Forecast System)](https://github.com/hafs-community/HAFS.git), which uses the UFS framework, already contains some of the pieces we need for setting up regional configurations and boundary conditions. However, it does not come with any Arctic meshes, nor does it run with CICE6. It also includes some extra capabilities that we do not need (such as storm-following nests)
 
 Alternatively, the [UFS model](https://github.com/ufs-community/ufs-weather-model.git) does have a compile flag (S2S) and regression tests to set up a coupled FV3+MOM6+CICE6 run *globally*, but this setup does not yet include a regional configuration. However, within UFS there are regional HAFS regression tests (that do not include CICE6) which we can start working from.
-### Current Plan:
+
+**Current Plan:**
 * With UFS, set up a simple static regional FV3+MOM6 test case using the default North Atlantic domain included in the HAFS regression test cases
 * Set up a MOM6 mesh located over the Arctic ocean
 * Following the workflow in HAFS, generate boundary conditions for the Arctic domain
 * Modify the simple test case from (1) to run with the Arctic domain
 * Adjust the configuration to include CICE6
 
-## Guides
-### Running Test Cases (on Hera)
-These are existing run directories.
+Table of Contents
+=================
+- [Guides](#guides)
+  - [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera)
+  - [Generating MOM6 Initial and Boundary Inputs](#generating-mom6-initial-and-boundary-inputs)
+  - [Generating FV3 Initial and Boundary Inputs](#generating-fv3-initial-and-boundary-inputs)
+  - [Generating ESMF mesh from MOM6 mask file](#generating-esmf-mesh-from-mom6-mask-file)
+  - [Generating a MOM6 Mask File](#generating-a-mom6-mask-file)
+  - [Generating new Initial Condition file from RTOFS input](#generating-new-initial-condition-file-from-rtofs-input)
+  - [Setting up new regional static atm+ocn test case based on HAFS](#setting-up-new-regional-static-atmocn-test-case-based-on-hafs)
+- [Notes on Running with CICE6](#notes-on-running-with-cice6)
+  - [Generating CICE6 grid files](#generating-cice6-grid-files)
+
+Guides
+======
+
+Accessing Existing Test Cases (Hera)
+------------------------------------
+These are existing run directories containing all inputs needed to run the corresponding test case. Each one can be run independently of the others.
 1. Recursively copy all files from the directory on Hera to your working directory.
-* Regional Static Atm + MOM6 (HAFS Atlantic grid):
+* Regional Static FV3 + MOM6 (Uses HAFS North Atlantic grid for both ocean and atmosphere):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
-* Arctic MOM6 Mesh Test:
+* Arctic MOM6 Mesh Test (Arctic ocean grid with HAFS North American atmosphere grid):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/mom6_arctic_mesh_test/`
-* Arctic ATM and Arctic MOM6 Test:
+* Arctic ATM and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_ocn_atm_test`
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
 
-### Generating MOM6 input files
-If you have an existing run directory set up (e.g., see previous section), then this is the process for generating initial condition files for the run.
+Generating MOM6 Initial and Boundary Inputs
+-------------------------------------------
+This will create ocean inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. Go to the `ocn_prep` directory.
 2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`).
 3. Check `run_init.sh` has the environment variables set.
@@ -39,33 +57,17 @@ If you have an existing run directory set up (e.g., see previous section), then 
 5. Copy all `.nc` output files from `intercom/` to the `INPUT/` inside your model run directory.
 6. Replace `MOM_input` in your model run directory with the version in `intercom/`.
 
-### Generating Atmospheric input files
+Generating FV3 Initial and Boundary Inputs
+------------------------------------------
+This will create atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. Go to the `atm_prep` directory.
 2. Check `config.in` file for any necessary changes to file locations or other variables.
 3. Run `./run_atm_prep.sh`.
 4. Copy all netcdf files from `intercom/chgres` into your model run `INPUT` directory.
 
-#### Notes on directory files:
-* `run_init.sh`
-This script sets up environmental variables and is the main driver for generating 1) initial conditions from RTOFS, 2) lateral boundary conditions from RTOFS, and 3) data atmosphere input from GFS.
-* `remap_ICs.sh`
-This script is called by run_init.sh and calls the remapping scripts for all of the variables (SSH, temperature, salinity, and U-V velocity vector) to generate initial conditions on the MOM6 mesh. (Velocity components are placed on their respective edges).
-* `remap_OBCs.sh`
-This script is called by run_init.sh and calls the remapping script for each of the four boundaries. It also reformats the OBC outputs so that they can be read in by the MOM6 model.
-* `rtofs_to_mom6.py`
-This is the main remapping script containing the logic for remapping from RTOFS input data to MOM6 mesh. It is called by the `remap_*.sh` scripts.
-* `modules/`
-This directory contains modules for the remapping class used by `rtofs_to_mom6.py`
-* `fix/` 
-This directory contains the MOM6 mesh data.
-* `intercom/`
-This directory contains the files that need to be sent to the model run directory. The outputs from the remapping scripts are placed here.
-* `inputs/`
-This directory contains namelists and houses input files obtained while gathering the RTOFS and GFS input datasets for remapping.
-
-### Generating ESMF mesh from MOM6 mask file
-This is for generating the meshes necessary to run with MOM6 in UFS based on existing MOM6 grid files.
-Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be found on Gaea at `/gpfs/f5/cefi/world-shared/ARC12_pub/GRID`.
+Generating ESMF mesh from MOM6 mask file
+----------------------------------------
+This is for generating the meshes necessary to run with MOM6 in UFS based on existing MOM6 grid files. These have already been generated for the Arctic MOM6 mesh used in [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera). 
 1. Find the required files in `mom6_mesh_generation` (or on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_testing/mesh_generation/`)
 2. Copy both files to the directory containing an ocean mask file.
 * *Note*: This requires an `ocean_mask.nc` file containing longitude and latitude variables `x(ny,nx)` and `y(ny,nx)`, respectively. 
@@ -74,12 +76,16 @@ Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be
 3. Edit `mesh_gen_job.sh` as needed, then run the code.
 `sbatch mesh_gen_job.sh`
 
-### Generating a MOM6 Mask File
+Generating a MOM6 Mask File
+---------------------------
+This can be used if you do not have a MOM6 mesh or need to generate a new mesh with different parameters. A MOM6 mask file has already been generated for the Arctic MOM6 mesh used in [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera). 
 1. Use [FRE-NCtools](https://github.com/NOAA-GFDL/FRE-NCtools.git) command:
 `make_quick_mosaic --input_mosaic input_mosaic.nc [--mosaic_name mosaic_name] [--ocean_topog ocean_topog.nc] [--sea_level #] [--reproduce_siena] [--land_frac_file frac_file] [--land_frac_field frac_field]`
 2. Make note of the sea level chosen in this step! 0 is the default if it is not specified. You will need to make sure this value is consistent with `MASKING_DEPTH` variable in `MOM_input`
 
-### Generating new IC file from RTOFS input
+Generating new Initial Condition file from RTOFS input
+------------------------------------------------------
+This is automatically done as part of the [Generating MOM6 Initial and Boundary Inputs](#generating-mom6-initial-and-boundary-inputs) scripts.
 1. Recursively copy all files from the directory on Hera to your working directory
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/input_files/ocn_ic/`
 2. Required mesh and interpolation weight files are already in the directory for the current Arctic mesh. If you would like to generate new interpolation weights (e.g., for a different mesh), make sure to do the following:
@@ -90,8 +96,9 @@ Note: Arctic MOM6 grid files can be found on Gaea: Arctic MOM6 files can also be
 4. Run `./mom6_init.sh`
 5. Copy the output file (by default, this will be named mom6_init.nc) to your run’s `INPUT/` directory. Edit `MOM_input` in the run directory to contain the new IC file and variable names.
 
-### Setting up new regional static atm+ocn test case
-This explains how to set up a new test case from an existing regression test in the ufs-weather-model repository. If you just want to get it running quickly on Hera, use the run guide above.
+Setting up new regional static atm+ocn test case based on HAFS
+--------------------------------------------------------------
+This explains how to set up a brand new test case from an existing regression test in the ufs-weather-model repository.
 
 1. Download UFS weather model
 `git clone --recursive https://github.com/ufs-community/ufs-weather-model.git ufs-weather-model`
@@ -151,13 +158,15 @@ ncks -x -v contact_index,contacts C96_mosaic.nc C96_mosaic.nc
 ```
 13. Run `sbatch job_card` and check if the output files show a successfully completed run.
 
-## Notes on Running with CICE6
+Notes on Running with CICE6
+===========================
 Currently, there is no testcase using CICE6. Below are some points to consider when setting up CICE6:
 * Grid files for CICE6 must be generated based on the MOM6 ocean grid being used (see below)
 * Existing forecast datasets may be in CICE4 which will need to be converted to CICE6
 * The initial conditions contain many variables, and care will need to be taken to remap correctly while maintaining the correct classifications of different cells. 
 
-### Generating CICE6 grid files
+Generating CICE6 grid files
+---------------------------
 The following grid files are needed to run CICE6:
 * `grid_cice_NEMS_mx{res}.nc`
 * `kmtu_cice_NEMS_mx{res}.nc`
