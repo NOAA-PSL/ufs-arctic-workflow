@@ -13,7 +13,7 @@
 APRUNS=${APRUNS-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"}
 
 INPUT_DIR=${INPUT_DIR-"inputs/"}
-FIX_DIR=${FIX_DIR-"fix/mom6_arctic_grid/"}
+FIX_DIR=${FIX_DIR-"fix/${OCNgrid}/"}
 OUTPUT_DIR=${OUTPUT_DIR-"intercom/"}
 
 OUT_FILE_PATH_BASE=${OUTPUT_DIR}${OUT_FILE_BASE-"mom6_OBC_"}
