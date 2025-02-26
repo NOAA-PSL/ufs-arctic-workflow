@@ -28,4 +28,4 @@ cd ${WORKocn}
 ./run_init.sh
 
 mv ${WORKocn}/intercom/*.nc ${WORKdir}/intercom/.
-cp ${WORKocn}/intercom/MOM_input ${WORKdir}/intercom/.
+cp ${WORKocn}/MOM_input ${WORKdir}/intercom/.
