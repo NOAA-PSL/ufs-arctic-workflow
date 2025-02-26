@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Environment Paths
+export ATMGRIDdir="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
+export COMINgfs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"
+export OCNgrid="ARC12"
+export OCNGRIDdir="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCNgrid}/input_files"
+export HAFSdir="/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"
+export FIXhafs="${HAFSdir}/fix/"
+export PARMhafs="${HAFSdir}/parm/"
+export EXEChafs="${HAFSdir}/exec/"
+export USHhafs="${HAFSdir}/ush/"
+export MODhafs="${HAFSdir}/modulefiles/"
+export COMINrtofs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"
+export WORKdir="$(pwd)"
+export WORKatm="$(pwd)/atm_prep/"
+export WORKocn="$(pwd)/ocn_prep/"
+export FIXdir="${WORKocn}/fix/${OCNgrid}/"
+
+export system="hera"
+
+# Run Parameters
+export cyc=12
+export CDATE=2020082512
+export PDY=20200825
+export NDATE="/scratch1/NCEPDEV/nems/role.epic/spack-stack/spack-stack-1.6.0/envs/unified-env-rocky8/install/intel/2021.5.0/prod-util-2.1.1-4vpcrpl/bin/ndate"
+export CDATEprior=$(${NDATE} -6 ${CDATE})
+
+export GFSVER=PROD2021
+export nest_grids=-1
+export CASE=C96
+export LEVS=65
+export halo_blend=10
+
+export BC_GROUPI=1
+export BC_GROUPN=1
+export NBDYHRS=3
+export NHRS=6
+export FHRB=0
+export FHRI=3
+export FHR=0
+
+export gtype=regional
+export ictype=gfsnetcdf
+export bctype=gfsnetcdf
+
+# Commands
+export APRUNC="srun --time=10:00 --ntasks=30 --ntasks-per-node=10 --cpus-per-task=1 --account=gsienkf"
+export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"
+export NLN="ln -s"
+export PLN="ln -s"
+export RLN="ln =s"
+export NCP="cp"
+export WGRIB2="wgrib2"

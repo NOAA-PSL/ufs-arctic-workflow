@@ -9,7 +9,7 @@ export PARMhafs="${HAFSdir}/parm/"
 export EXEChafs="${HAFSdir}/exec/"
 export USHhafs="${HAFSdir}/ush/"
 export MODhafs="${HAFSdir}/modulefiles/"
-export WORKhafs=$(pwd)
+export WORKatm=$(pwd)
 
 # Run Parameters
 export cyc=12

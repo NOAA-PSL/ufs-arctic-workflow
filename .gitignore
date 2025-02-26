@@ -13,6 +13,7 @@ atm_prep/atm_lbc/
 *.b
 
 # Output file ignores
+intercom/
 ocn_prep/outputs/
 ocn_prep/intercom/
 atm_prep/intercom/

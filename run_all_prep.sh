@@ -9,8 +9,22 @@ else
     exit 1
 fi
 
+mkdir -p ${WORKdir}/intercom
+
+# Run Atmosphere prep
+cd ${WORKatm}
+
 mkdir -p ${WORKatm}/intercom/grid/${CASE}
 ${NLN} ${ATMGRIDdir}/* ${WORKatm}/intercom/grid/${CASE}/.
 
 ./exhafs_atm_ic.sh
 ./exhafs_atm_lbc.sh
+
+mv ${WORKatm}/intercom/chgres/*.nc ${WORKdir}/intercom/.
+
+
+# Run Ocean prep
+cd ${WORKocn}
+./run_init.sh
+
+mv ${WORKocn}/intercom/* ${WORKdir}/intercom/.

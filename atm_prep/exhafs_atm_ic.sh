@@ -36,7 +36,7 @@ if [ ${ENSDA} != YES ]; then
   ictype=${ictype:-gfsnetcdf}
   bctype=${bctype:-gfsnetcdf}
   LEVS=${LEVS:-65}
-  GRID_intercom=${WORKhafs}/intercom/grid
+  GRID_intercom=${WORKatm}/intercom/grid
 else
   NBDYHRS=${NBDYHRS_ENS:-3}
   CASE=${CASE_ENS:-C768}
@@ -45,7 +45,7 @@ else
   ictype=${ictype_ens:-gfsnetcdf}
   bctype=${bctype_ens:-gfsnetcdf}
   LEVS=${LEVS_ENS:-65}
-  GRID_intercom=${WORKhafs}/intercom/grid_ens
+  GRID_intercom=${WORKatm}/intercom/grid_ens
 fi
 
 # Generate the ICs and BC hour 0
@@ -63,13 +63,13 @@ vcoord_file_target_grid=${vcoord_file_target_grid:-${FIXhafs}/fix_am/global_hybl
 
 if [ $GFSVER = "PROD2021" ]; then
  if [ ${ENSDA} = YES ]; then
-  export OUTDIR=${OUTDIR:-${WORKhafs}/intercom/chgres_ens/mem${ENSID}}
+  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres_ens/mem${ENSID}}
   export INIDIR=${COMINgdas}/enkfgdas.${PDY_prior}/${cyc_prior}/atmos/mem${ENSID}
  elif [ ${FGAT_MODEL} = gdas ]; then
-  export OUTDIR=${OUTDIR:-${WORKhafs}/intercom/chgres_fgat${FGAT_HR}}
+  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres_fgat${FGAT_HR}}
   export INIDIR=${COMINgdas}/gdas.${PDY_prior}/${cyc_prior}/atmos
  else
-  export OUTDIR=${OUTDIR:-${WORKhafs}/intercom/chgres}
+  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres}
   export INIDIR=${COMINgfs}/gfs.$PDY/$cyc/atmos
  fi
 else
@@ -77,7 +77,7 @@ else
   exit 9
 fi
 
-DATA=${DATA:-${WORKhafs}/atm_ic}
+DATA=${DATA:-${WORKatm}/atm_ic}
 mkdir -p ${OUTDIR} ${DATA}
 
 FIXDIR=${DATA}/grid
