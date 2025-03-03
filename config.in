@@ -1,10 +1,25 @@
 #!/bin/sh
 
-# Environment Paths
-export ATMGRIDdir="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
-export COMINgfs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"
-export OCNgrid="ARC12"
-export OCNGRIDdir="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCNgrid}/input_files"
+# Ocean grid type -- current Arctic MOM6 grid is ARC12
+export OCN_GRID_NAME="ARC12"
+
+# Currently, only Hera has been tested
+export system="hera"
+
+# Set account for srun commands
+SACCT="gsienkf"
+
+# Locations to retrieve datasets from
+export ATM_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
+export OCN_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
+
+# Working directory locations
+export WORK_DIR="$(pwd)"
+export ATM_WORK_DIR="$(pwd)/atm_prep/"
+export OCN_WORK_DIR="$(pwd)/ocn_prep/"
+export OCN_FIX_DIR="${OCN_WORK_DIR}/fix/${OCN_GRID_NAME}/"
+
+# Point to HAFS directory locations
 export HAFSdir="/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"
 export FIXhafs="${HAFSdir}/fix/"
 export PARMhafs="${HAFSdir}/parm/"
@@ -12,24 +27,20 @@ export EXEChafs="${HAFSdir}/exec/"
 export USHhafs="${HAFSdir}/ush/"
 export MODhafs="${HAFSdir}/modulefiles/"
 export COMINrtofs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"
-export WORKdir="$(pwd)"
-export WORKatm="$(pwd)/atm_prep/"
-export WORKocn="$(pwd)/ocn_prep/"
-export FIXdir="${WORKocn}/fix/${OCNgrid}/"
+export COMINgfs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"
 
-export system="hera"
-
-# Run Parameters
-export cyc=12
+# Run Parameters -- Used by HAFS scripts
 export CDATE=2020082512
 export PDY=20200825
 export NDATE="/scratch1/NCEPDEV/nems/role.epic/spack-stack/spack-stack-1.6.0/envs/unified-env-rocky8/install/intel/2021.5.0/prod-util-2.1.1-4vpcrpl/bin/ndate"
 export CDATEprior=$(${NDATE} -6 ${CDATE})
-
-export GFSVER=PROD2021
+export cyc=12
 export nest_grids=-1
-export CASE=C96
+export CASE="C96"
 export LEVS=65
+
+export GFSVER="PROD2021"
+export nest_grids=-1
 export halo_blend=10
 
 export BC_GROUPI=1
@@ -45,8 +56,8 @@ export ictype=gfsnetcdf
 export bctype=gfsnetcdf
 
 # Commands
-export APRUNC="srun --time=10:00 --ntasks=30 --ntasks-per-node=10 --cpus-per-task=1 --account=gsienkf"
-export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"
+export APRUNC="srun --time=10:00 --ntasks=30 --ntasks-per-node=10 --cpus-per-task=1 --account=${SACCT}"
+export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"
 export NLN="ln -s"
 export PLN="ln -s"
 export RLN="ln =s"

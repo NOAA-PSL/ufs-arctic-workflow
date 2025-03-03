@@ -9,23 +9,22 @@ else
     exit 1
 fi
 
-mkdir -p ${WORKdir}/intercom
+mkdir -p ${WORK_DIR}/intercom
 
-# Run Atmosphere prep
-cd ${WORKatm}
-
-mkdir -p ${WORKatm}/intercom/grid/${CASE}
-${NLN} ${ATMGRIDdir}/* ${WORKatm}/intercom/grid/${CASE}/.
-
-./exhafs_atm_ic.sh
-./exhafs_atm_lbc.sh
-
-mv ${WORKatm}/intercom/chgres/*.nc ${WORKdir}/intercom/.
-
+## Run Atmosphere prep
+#cd ${ATM_WORK_DIR}
+#
+#mkdir -p ${ATM_WORK_DIR}/intercom/grid/${CASE}
+#${NLN} ${ATM_GRID_DIR}/* ${ATM_WORK_DIR}/intercom/grid/${CASE}/.
+#
+#./exhafs_atm_ic.sh
+#./exhafs_atm_lbc.sh
+#
+#mv ${ATM_WORK_DIR}/intercom/chgres/*.nc ${WORK_DIR}/intercom/.
 
 # Run Ocean prep
-cd ${WORKocn}
+cd ${OCN_WORK_DIR}
 ./run_init.sh
 
-mv ${WORKocn}/intercom/*.nc ${WORKdir}/intercom/.
-cp ${WORKocn}/MOM_input ${WORKdir}/intercom/.
+mv ${OCN_WORK_DIR}/intercom/*.nc ${WORK_DIR}/intercom/.
+cp ${OCN_WORK_DIR}/MOM_input ${WORK_DIR}/intercom/.
