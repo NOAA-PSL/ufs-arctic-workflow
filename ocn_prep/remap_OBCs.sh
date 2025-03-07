@@ -12,17 +12,16 @@
 # !!! EDIT srun details if needed
 APRUNS=${APRUNS:-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"}
 
-INPUT_DIR=${INPUT_DIR:-"inputs/"}
-FIX_DIR=${FIX_DIR:-"fix/${OCN_GRID_NAME}/"}
-OUTPUT_DIR=${OUTPUT_DIR:-"intercom/"}
+INPUT_DIR=${OCN_RUN_DIR}/inputs/
+OUTPUT_DIR=${OCN_RUN_DIR}/intercom/
 
 OUT_FILE_PATH_BASE=${OUTPUT_DIR}${OUT_FILE_BASE:-"mom6_OBC_"}
-WGT_FILE_PATH_BASE=${FIX_DIR}${WGT_FILE_BASE:-"rtofs2hgrid_"}
-ANG_FILE_PATH_BASE=${FIX_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
-HGD_FILE_PATH_BASE=${FIX_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
+WGT_FILE_PATH_BASE=${INPUT_DIR}${WGT_FILE_BASE:-"rtofs2hgrid_"}
+ANG_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
+HGD_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
 FILE_TAIL=${FILE_TAIL:-".nc"}
 
-VRT_FILE_PATH=${FIX_DIR}${VRT_FILE:-"ocean_vgrid.nc"}
+VRT_FILE_PATH=${INPUT_DIR}${VRT_FILE:-"ocean_vgrid.nc"}
 
 SSH_VARNAME=${SSH_VARNAME:-"ssh"}
 SSH_SRC_FILE_PATH=${INPUT_DIR}${SSH_SRC_FILE:-"rtofs.f12_global_ssh_obc.nc"}
@@ -37,7 +36,7 @@ V_VARNAME=${V_VARNAME:-"v"}
 UV_SRC_FILE_PATH=${INPUT_DIR}${UV_SRC_FILE:-"rtofs.f12_global_uv_obc.nc"}
 
 ANGLE_VARNAME=${ANGLE_VARNAME:-"angle_dx"}
-ANGLE_SRC_FILE_PATH=${FIX_DIR}${ANGLE_SRC_FILE:-"ocean_hgrid.nc"}
+ANGLE_SRC_FILE_PATH=${INPUT_DIR}${ANGLE_SRC_FILE:-"ocean_hgrid.nc"}
 CONVERT_ANGLE=${CONVERT_ANGLE:-"False"}
 
 DZ_VARNAME=${DZ_VARNAME:-"dz"}

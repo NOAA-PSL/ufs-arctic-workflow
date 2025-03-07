@@ -15,7 +15,7 @@ Alternatively, the [UFS model](https://github.com/ufs-community/ufs-weather-mode
 * With UFS, set up a simple static regional FV3+MOM6 test case using the default North Atlantic domain included in the HAFS regression test cases
 * Set up a MOM6 mesh located over the Arctic ocean
 * Following the workflow in HAFS, generate boundary conditions for the Arctic domain
-* Modify the simple test case from (1) to run with the Arctic domain
+* Modify the simple test case from to run with the Arctic domain
 * Adjust the configuration to include CICE6
 
 Table of Contents
@@ -51,8 +51,8 @@ These are existing run directories containing all inputs needed to run the corre
 Generating all Initial and Boundary Inputs
 ------------------------------------------
 This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
-1. In the main directory, check the `config.in` file for accessible file locations and correct account information.
-2. Run `./run_all_prep`
+1. In the run directory, check the `config.in` file for accessible file locations and correct account information.
+2. Run `./run_all_prep` from this directory.
 3. Output files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
 
 Generating MOM6 Initial and Boundary Inputs

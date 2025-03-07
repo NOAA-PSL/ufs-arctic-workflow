@@ -12,18 +12,16 @@
 # !!! EDIT srun details if needed
 APRUNS=${APRUNS:-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"}
 
-INPUT_DIR=${INPUT_DIR:-"inputs/"}
-FIX_DIR=${FIX_DIR:-"fix/${OCN_GRID_NAME}/"}
-OUTPUT_DIR=${OUTPUT_DIR:-"intercom/"}
-
+INPUT_DIR=${OCN_RUN_DIR}/inputs/
+OUTPUT_DIR=${OCN_RUN_DIR}/intercom/
 
 OUT_FILE_PATH="${OUTPUT_DIR}${OUT_FILE:-"mom6_IC.nc"}"
 
-VRT_FILE_PATH="${FIX_DIR}${VRT_FILE:-"ocean_vgrid.nc"}"
+VRT_FILE_PATH="${INPUT_DIR}${VRT_FILE:-"ocean_vgrid.nc"}"
 
-H_WGT_FILE_PATH="${FIX_DIR}${H_WGT_FILE:-"rtofs2arctic_h.nc"}"
-U_WGT_FILE_PATH="${FIX_DIR}${U_WGT_FILE:-"rtofs2arctic_u.nc"}"
-V_WGT_FILE_PATH="${FIX_DIR}${V_WGT_FILE:-"rtofs2arctic_v.nc"}"
+H_WGT_FILE_PATH="${INPUT_DIR}${H_WGT_FILE:-"rtofs2arctic_h.nc"}"
+U_WGT_FILE_PATH="${INPUT_DIR}${U_WGT_FILE:-"rtofs2arctic_u.nc"}"
+V_WGT_FILE_PATH="${INPUT_DIR}${V_WGT_FILE:-"rtofs2arctic_v.nc"}"
 
 SSH_VARNAME=${SSH_VARNAME:-"ssh"}
 SSH_SRC_FILE_PATH="${INPUT_DIR}${SSH_SRC_FILE:-"rtofs_global_ssh_ic.nc"}"
@@ -37,7 +35,7 @@ V_VARNAME=${V_VARNAME:-"v"}
 UV_SRC_FILE_PATH="${INPUT_DIR}${UV_SRC_FILE:-"rtofs_global_uv_ic.nc"}"
 
 ANGLE_VARNAME=${ANGLE_VARNAME:-"angle_dx"}
-ANGLE_SRC_FILE_PATH="${FIX_DIR}${ANGLE_SRC_FILE:-"ocean_hgrid.nc"}"
+ANGLE_SRC_FILE_PATH="${INPUT_DIR}${ANGLE_SRC_FILE:-"ocean_hgrid.nc"}"
 CONVERT_ANGLE=${CONVERT_ANGLE:-"True"}
 
 DZ_VARNAME=${DZ_VARNAME:-"dz"}

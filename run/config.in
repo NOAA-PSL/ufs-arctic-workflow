@@ -14,10 +14,12 @@ export ATM_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
 export OCN_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
 
 # Working directory locations
-export WORK_DIR="$(pwd)"
-export ATM_WORK_DIR="$(pwd)/atm_prep/"
-export OCN_WORK_DIR="$(pwd)/ocn_prep/"
-export OCN_FIX_DIR="${OCN_WORK_DIR}/fix/${OCN_GRID_NAME}/"
+export MAIN_DIR="$(pwd)/../" # Top level directory
+export RUN_DIR="$(pwd)/" # Current run directory
+export ATM_SCRIPT_DIR="${MAIN_DIR}/atm_prep/"
+export OCN_SCRIPT_DIR="${MAIN_DIR}/ocn_prep/"
+export ATM_RUN_DIR="${RUN_DIR}/atm_prep/"
+export OCN_RUN_DIR="${RUN_DIR}/ocn_prep/"
 
 # Point to HAFS directory locations
 export HAFSdir="/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"

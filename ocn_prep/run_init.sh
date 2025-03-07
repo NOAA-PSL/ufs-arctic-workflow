@@ -37,8 +37,9 @@ export APRUNS=${APRUNS:-"srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-pe
 
 # !!! Edit for your working directory (where the initial files will be placed) !!!
 export OCN_GRID_NAME=${OCN_GRID_NAME:-"ARC12"}
-export OCN_WORK_DIR=${OCN_WORK_DIR:-"$(pwd)"}
-export OCN_FIX_DIR=${OCN_FIX_DIR:-"${OCN_WORK_DIR}/fix/${OCN_GRID_NAME}/"}
+export OCN_SCRIPT_DIR=${OCN_SCRIPT_DIR:-"$(pwd)"}
+export OCN_RUN_DIR=${OCN_RUN_DIR:-"$(pwd)"}
+export OCN_GRID_DIR=${OCN_GRID_DIR:-"/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"}
 
 # !!! Edit for your local dataset locations !!!
 # These can be found by checking the relevant system.conf file in the parm/ directory of the HAFS repository.
@@ -71,8 +72,8 @@ else
 fi
 
 # Make the intercom dir
-mkdir -p ${OCN_WORK_DIR}/intercom/
-mkdir -p ${OCN_WORK_DIR}/inputs/
+mkdir -p ${OCN_RUN_DIR}/intercom/
+mkdir -p ${OCN_RUN_DIR}/inputs/
 
 ymd=`echo $CDATE | cut -c 1-8`
 hour=`echo $CDATE | cut -c 9-10`
@@ -99,11 +100,11 @@ FHR3=$( printf "%03d" "$FHR" )
 # ----------------------------------------------------------------------------------- #
 
 # Retrive the regridding weights and ocean grid files
-mkdir -p ${OCN_FIX_DIR}
-${NLN} /scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files/* ${OCN_FIX_DIR}/.
+mkdir -p ${OCN_RUN_DIR}/inputs/
+${NLN} ${OCN_GRID_DIR}/* ${OCN_RUN_DIR}/inputs/.
+${NLN} ${OCN_SCRIPT_DIR}/inputs/* ${OCN_RUN_DIR}/inputs/.
 
-cd ${OCN_WORK_DIR}/inputs/
-echo $(pwd)
+cd ${OCN_RUN_DIR}/inputs/
 
 # Names of output files and Hycom Utilities inputs
 outnc_2d=global_ssh_ic.nc
@@ -143,33 +144,33 @@ fi
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_ic.in 2>&1 | tee archv2ncdf3z_3d_ic.log
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_ic.in 2>&1 | tee ./archv2ncdf2d_ssh_ic.log
 
-cd ${OCN_FIX_DIR}
+cd ${OCN_RUN_DIR}/inputs/
 
-if [ ! -e "${OCN_FIX_DIR}/rtofs2hgrid_001.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_001.nc" ]; then
     echo "File rtofs2hgrid_001.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_WORK_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_001.nc -w rtofs2hgrid_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_001.nc -w rtofs2hgrid_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${OCN_FIX_DIR}/rtofs2hgrid_002.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_002.nc" ]; then
     echo "File rtofs2hgrid_002.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_WORK_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_002.nc -w rtofs2hgrid_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_002.nc -w rtofs2hgrid_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${OCN_FIX_DIR}/rtofs2hgrid_003.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_003.nc" ]; then
     echo "File rtofs2hgrid_003.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_WORK_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_003.nc -w rtofs2hgrid_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_003.nc -w rtofs2hgrid_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${OCN_FIX_DIR}/rtofs2hgrid_004.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_004.nc" ]; then
     echo "File rtofs2hgrid_004.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_WORK_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_004.nc -w rtofs2hgrid_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_004.nc -w rtofs2hgrid_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
 
-cd ${OCN_WORK_DIR}
+cd ${OCN_SCRIPT_DIR}
 ./remap_ICs.sh
 
 # ----------------------------------------------------------------------------------- #
 #                                   OBC Setup                                         #
 # ----------------------------------------------------------------------------------- #
 
-cd ${OCN_WORK_DIR}/inputs/
+cd ${OCN_RUN_DIR}/inputs/
 
 # Define output file names and HYCOM variables
 outnc_2d=global_ssh_obc.nc
@@ -183,14 +184,14 @@ export CDF033=rtofs.${type}${hour}_${outnc_uv}
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_obc.in 2>&1 | tee ./archv2ncdf2d_ssh_obc.log
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_obc.in 2>&1 | tee ./archv2ncdf3z_3d_obc.log
 
-cd ${OCN_WORK_DIR}
+cd ${OCN_SCRIPT_DIR}
 ./remap_OBCs.sh
 
 # ----------------------------------------------------------------------------------- #
 #                                GFS Forcing Setup                                    #
 # ----------------------------------------------------------------------------------- #
 
-cd ${OCN_WORK_DIR}/inputs/
+cd ${OCN_RUN_DIR}/inputs/
 
 # Prepare data atmosphere forcings from GFS
 PARMave=":USWRF:surface|:DSWRF:surface|:ULWRF:surface|:DLWRF:surface|:UFLX:surface|:VFLX:surface|:SHTFL:surface|:LHTFL:surface"
@@ -318,7 +319,7 @@ fileall="gfs_global_${CDATE}_NETLW.nc \
 module load cdo
 cdo merge ${fileall} gfs_forcings.nc
 
-${NCP} gfs_forcings.nc ${OCN_WORK_DIR}/intercom/.
+${NCP} gfs_forcings.nc ${OCN_RUN_DIR}/intercom/.
 
 # ----------------------------------------------------------------------------------- #
 #                                    Complete!                                        #

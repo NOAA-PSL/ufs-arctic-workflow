@@ -5,17 +5,7 @@
 # Vim ignores
 *.swp
 
-# Input file ignores
-ocn_prep/fix/
-atm_prep/atm_ic/
-atm_prep/atm_lbc/
-*.nc
-*.a
-*.b
-
-# Output file ignores
-intercom/
-ocn_prep/outputs/
-ocn_prep/intercom/
-atm_prep/intercom/
-*.log
+# Run directory ignores
+run/atm_prep/
+run/ocn_prep/
+run/intercom/
