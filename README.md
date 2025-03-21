@@ -51,9 +51,10 @@ These are existing run directories containing all inputs needed to run the corre
 Generating all Initial and Boundary Inputs
 ------------------------------------------
 This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
-1. In the run directory, check the `config.in` file for accessible file locations and correct account information.
-2. Run `./run_all_prep` from this directory.
-3. Output files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
+1. First, go the the `run` directory and edit `run_all_prep.sh` so that it points to the desired config directory found in `config_files` (or setup your own `config.in`).
+2. Run `./run_all_prep` from `run` directory.
+3. Output and configure files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
+4. Running `./clean.sh` will reset the directory and delete all generated files.
 
 Generating MOM6 Initial and Boundary Inputs
 -------------------------------------------
@@ -192,3 +193,11 @@ This requires the following files:
 * FV3 input files (mesh, mosaic, etc)
 
 Running `cpld_gridgen` will generate the first of the two grid files. The second can be generated from the first using the command `ncks -O -v kmt grid_cice_NEMS_mx{res}.nc kmtu_cice_NEMS_mx{res}.nc` (for whichever resolution, `{res}`, was specified in the namelist file.)
+
+Setting up CICE6 regional run
+-----------------------------
+To run with regional CICE6, make sure to do at least the following:
+* Compile with `-DAPP=S2S`
+* `ufs.configure`: set `coupling_mode=ufs.frac`
+* `ice_in`: set `grid_type='regional'`
+Additionally, there maybe issues with the land/ocean mask generated for CICE to be incorrect. Check the mask and manually fix it to be identical to that used by MOM6 if necessary.
