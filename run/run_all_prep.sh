@@ -1,6 +1,7 @@
 #!/bin/bash
 
-NAMELIST_FILE="config.in"
+CONFIG_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/repos/NOAA-PSL/ufs-arctic-workflow/run/config_files/2020_08_25_12_3HR"
+NAMELIST_FILE="$CONFIG_DIR/config.in"
 
 if [[ -f "$NAMELIST_FILE" ]]; then
     source "$NAMELIST_FILE"
@@ -31,4 +32,5 @@ cd ${OCN_SCRIPT_DIR}
 ./run_init.sh
 
 mv ${OCN_RUN_DIR}/intercom/* ${RUN_DIR}/intercom/.
-cp ${OCN_RUN_DIR}/inputs/MOM_input ${RUN_DIR}/intercom/.
+
+cp ${CONFIG_DIR}/* ${RUN_DIR}/intercom/.

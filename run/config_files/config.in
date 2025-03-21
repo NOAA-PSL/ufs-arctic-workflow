@@ -40,6 +40,8 @@ export cyc=12
 export nest_grids=-1
 export CASE="C96"
 export LEVS=65
+export NHRS=6 # Total number of forecast hours
+export NBDYHRS=3 # Hour steps at which boundary conditions are generated 
 
 export GFSVER="PROD2021"
 export nest_grids=-1
@@ -47,8 +49,6 @@ export halo_blend=10
 
 export BC_GROUPI=1
 export BC_GROUPN=1
-export NBDYHRS=3
-export NHRS=6
 export FHRB=0
 export FHRI=3
 export FHR=0
