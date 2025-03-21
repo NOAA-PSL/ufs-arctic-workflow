@@ -35,6 +35,9 @@ def main(args):
     var_name_out = args.var_name_out or var_name
     dz_name_out = args.dz_name_out or dz_name
     time_name_out = args.time_name_out or time_name
+
+    # Optional -- Default to 0th time step if not specified
+    forecast_iter = args.forecast_iter or 0
     
     # Optional -- Only required if input is a vector and grid is not NE-aligned
     convert_angle_to_center = args.convert_angle_to_center or False
@@ -58,7 +61,7 @@ def main(args):
 
     # Append to file
     print(f"... Writing to output file ...")
-    var_remapper.write_to_file(out_file, dz_name_out, time_name_out, *var_name_out)
+    var_remapper.write_to_file(out_file, dz_name_out, time_name_out, forecast_iter, *var_name_out)
 
     print("Complete!")
 
@@ -122,6 +125,10 @@ if __name__=="__main__":
     parser.add_argument("--time_name_out", 
                         required=False, 
                         help=f"Output time dimension name. Defaults to `time_name` if not specified.")
+    parser.add_argument("--forecast_iter",
+                        required=False,
+                        type=int,
+                        help=f"Forecast iter, defaults to 0 (first time step). If > 0, appends data along time dimension.")
 
     args = parser.parse_args()  
 

@@ -24,9 +24,11 @@ cyc=${cyc:-'12'}
 STORM=${STORM:-'NATL'}
 STORMID=${STORMID:-'00L'}
 NHRS=${NHRS:-'6'}
+NOCNBDYHRS=${NOCNBDYHRS:-'6'}
 FHRB=${FHRB:-'0'}
 FHRI=${FHRI:-'3'}
 FHR=${FHR:-'0'}
+FHRB=${NHRS:-'6'}
 
 NLN=${NLN:-"ln -s"}
 NCP=${NCP:-"cp"}
@@ -84,13 +86,12 @@ else
 fi
 
 FHRB=0
-FHRE=9
 FHRI=3
 FHR=0
 FHR3=000
 
 FHRB=${FHRB:-0}
-FHRE=${FHRE:-$((${NHRS}+3))}
+FHRE=$((${NHRS}+3))
 FHRI=${FHRI:-3}
 FHR=${FHRB}
 FHR3=$( printf "%03d" "$FHR" )
@@ -166,6 +167,10 @@ fi
 cd ${OCN_SCRIPT_DIR}
 ./remap_ICs.sh
 
+# Unlink global RTOFS analysis or forecast files
+unlink archv_in.a
+unlink archv_in.b
+
 # ----------------------------------------------------------------------------------- #
 #                                   OBC Setup                                         #
 # ----------------------------------------------------------------------------------- #
@@ -176,13 +181,51 @@ cd ${OCN_RUN_DIR}/inputs/
 outnc_2d=global_ssh_obc.nc
 outnc_ts=global_ts_obc.nc
 outnc_uv=global_uv_obc.nc
-export CDF038=rtofs.${type}${hour}_${outnc_2d}
-export CDF034=rtofs.${type}${hour}_${outnc_ts}
-export CDF033=rtofs.${type}${hour}_${outnc_uv}
+echo $FHR
+echo $NHRS
+while [ $FHR -lt ${NHRS} ]; do
+  NEWDATE=$(${NDATE} +${FHR} $CDATE)
+  echo "NEWDATE:"
+  echo $NEWDATE
+  NEWymd=`echo $NEWDATE | cut -c 1-8`
+  HH=$(echo $NEWDATE | cut -c9-10)
+  echo "Hour:"
+  echo $HH
 
-# run HYCOM-tools executables to produce OBC netcdf files
-${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_obc.in 2>&1 | tee ./archv2ncdf2d_ssh_obc.log
-${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_obc.in 2>&1 | tee ./archv2ncdf3z_3d_obc.log
+  if [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a ]; then
+    ${NLN} ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a archv_in.a
+  elif [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz ]; then
+    tar -xpvzf ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz
+    ${NLN} rtofs_glo.t00z.${type}${HH}.archv.a archv_in.a
+  else
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a does not exist."
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz does not exist either."
+    echo "FATAL ERROR: Cannot generate MOM6 OBC. Exiting"
+    exit 1
+  fi
+  if [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b ]; then
+    ${NLN} ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b archv_in.b
+  else
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b does not exist."
+    echo "FATAL ERROR: Cannot generate MOM6 OBC. Exiting"
+    exit 1
+  fi
+
+  export CDF038=rtofs.${type}${HH}_${outnc_2d}
+  export CDF034=rtofs.${type}${HH}_${outnc_ts}
+  export CDF033=rtofs.${type}${HH}_${outnc_uv}
+  
+  # Run HYCOM-tools executables to produce OBC netcdf files
+  ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_obc.in 2>&1 | tee ./archv2ncdf2d_ssh_obc.log
+  ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_obc.in 2>&1 | tee ./archv2ncdf3z_3d_obc.log
+
+  # next obc hour
+  FHR=$((FHR+NOCNBDYHRS))
+  FHR3=$(printf "%03d" "$FHR")
+  unlink archv_in.a
+  unlink archv_in.b
+
+done
 
 cd ${OCN_SCRIPT_DIR}
 ./remap_OBCs.sh
@@ -191,6 +234,7 @@ cd ${OCN_SCRIPT_DIR}
 #                                GFS Forcing Setup                                    #
 # ----------------------------------------------------------------------------------- #
 
+FHR=0
 cd ${OCN_RUN_DIR}/inputs/
 
 # Prepare data atmosphere forcings from GFS
@@ -210,6 +254,7 @@ ${WGRIB2} ${grib2_file} -match "${PARMlist}" -netcdf gfs_global_${ymd_prior}${cy
 
 ## Loop for forecast hours
 while [ $FHR -le ${FHRE} ]; do
+  echo "$FHR/${FHRE}"
 
   # Use gfs 0.25 degree grib2 files
   grib2_file=${COMINgfs}/gfs.${ymd}/${cyc}/atmos/gfs.t${cyc}z.pgrb2.0p25.f${FHR3}

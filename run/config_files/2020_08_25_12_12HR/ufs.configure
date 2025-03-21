@@ -1,0 +1,117 @@
+##############################################
+#####  UFS Run-Time Configuration File  ######
+##############################################
+
+# ESMF #
+logKindFlag:            ESMF_LOGKIND_MULTI_ON
+globalResourceControl:  true
+
+# EARTH #
+EARTH_component_list: MED ATM OCN
+EARTH_attributes::
+  Verbosity = 0
+::
+
+# MED #
+MED_model:                      cmeps
+MED_petlist_bounds:             0 119
+MED_omp_num_threads:            2
+MED_attributes::
+  Verbosity = 0
+  Diagnostic = 0
+  ATM_model = fv3
+  OCN_model = mom6
+  MED_model = cmeps
+  history_n = 3
+  history_option = nhours
+  history_ymd = -999
+  coupling_mode = hafs.mom6
+  normalization = none
+  merge_type = copy
+  pio_rearranger = box
+  ocn_use_data_first_import = .true.
+::
+
+# ATM #
+ATM_model:                      fv3
+ATM_petlist_bounds:             0 239
+ATM_omp_num_threads:            2
+ATM_attributes::
+  Verbosity = 0
+  Diagnostic = 0
+  mesh_atm = unset
+  stop_n = 3
+  stop_option = nhours
+  stop_ymd = -999
+  write_restart_at_endofrun = .true.
+::
+
+# OCN #
+OCN_model:                      mom6
+OCN_petlist_bounds:             240 359
+OCN_omp_num_threads:            2
+OCN_attributes::
+  Verbosity = 0
+  Diagnostic = 0
+  history_n = 3
+  history_option = nhours
+  merge_import = .false.
+  skip_first_import = .false. #.true.
+  use_mommesh = true
+  eps_imesh = 2.5e-1
+  mesh_ocn = INPUT/mom6_arctic_mesh.nc
+::
+
+
+# Run Sequence #
+runSeq::
+@360
+  MED med_phases_cdeps_run
+  MED med_phases_prep_atm
+  MED med_phases_ocnalb_run
+  MED med_phases_prep_ocn_accum
+  MED med_phases_prep_ocn_avg
+  MED -> ATM :remapMethod=redist
+  MED -> OCN :remapMethod=redist
+  ATM
+  OCN
+  ATM -> MED :remapMethod=redist
+  OCN -> MED :remapMethod=redist
+  MED med_phases_post_atm
+  MED med_phases_post_ocn
+  MED med_phases_restart_write
+  MED med_phases_history_write
+@
+::
+
+# Other Attributes #
+DRIVER_attributes::
+::
+
+ALLCOMP_attributes::
+  ATM_model = fv3
+  OCN_model = mom6
+  MED_model = cmeps
+  ScalarFieldCount = 3
+  ScalarFieldIdxGridNX = 1
+  ScalarFieldIdxGridNY = 2
+  ScalarFieldIdxGridNTile = 3
+  ScalarFieldName = cpl_scalars
+  start_type = startup
+  case_name = ufs.hafs
+  restart_n = 3
+  restart_option = nhours
+  restart_ymd = -999
+  write_restart_at_endofrun = .false.
+  dbug_flag = 0
+  orb_eccen = 1.e36
+  orb_iyear = 2000
+  orb_iyear_align = 2000
+  orb_mode = fixed_year
+  orb_mvelp = 1.e36
+  orb_obliq = 1.e36
+  mediator_present = true
+  stop_n = 3
+  stop_option = nhours
+  stop_ymd = -999
+::

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/repos/NOAA-PSL/ufs-arctic-workflow/run/config_files/2020_08_25_12_3HR"
+CONFIG_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/repos/NOAA-PSL/ufs-arctic-workflow/run/config_files/"
 NAMELIST_FILE="$CONFIG_DIR/config.in"
 
 if [[ -f "$NAMELIST_FILE" ]]; then

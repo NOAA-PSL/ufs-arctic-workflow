@@ -29,7 +29,7 @@ FGAT_HR=${FGAT_HR:-00}
 
 # Set options specific to the deterministic/ensemble forecast
 if [ ${ENSDA} != YES ]; then
-  NBDYHRS=${NBDYHRS:-3}
+  NATMBDYHRS=${NATMBDYHRS:-3}
   CASE=${CASE:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype:-regional}
@@ -38,7 +38,7 @@ if [ ${ENSDA} != YES ]; then
   LEVS=${LEVS:-65}
   GRID_intercom=${ATM_RUN_DIR}/intercom/grid
 else
-  NBDYHRS=${NBDYHRS_ENS:-3}
+  NATMBDYHRS=${NATMBDYHRS_ENS:-3}
   CASE=${CASE_ENS:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype_ens:-regional}
