@@ -295,11 +295,3 @@ This requires the following files:
 * FV3 input files (mesh, mosaic, etc)
 
 Running `cpld_gridgen` will generate the first of the two grid files. The second can be generated from the first using the command `ncks -O -v kmt grid_cice_NEMS_mx{res}.nc kmtu_cice_NEMS_mx{res}.nc` (for whichever resolution, `{res}`, was specified in the namelist file.)
-
-Setting up CICE6 regional run
------------------------------
-To run with regional CICE6, make sure to do at least the following:
-* Compile with `-DAPP=S2S`
-* `ufs.configure`: set `coupling_mode=ufs.frac`
-* `ice_in`: set `grid_type='regional'`
-Additionally, there maybe issues with the land/ocean mask generated for CICE to be incorrect. Check the mask and manually fix it to be identical to that used by MOM6 if necessary.
