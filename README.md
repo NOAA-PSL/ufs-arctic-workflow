@@ -22,6 +22,7 @@ Table of Contents
 =================
 - [Guides](#guides)
   - [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera)
+  - [Setting up initial working ATM OCN ICE configuration](#setting-up-initial-working-atm-ocn-ice-configuration)
   - [Generating all Initial and Boundary Inputs](#generating-all-initial-and-boundary-inputs)
   - [Generating MOM6 Initial and Boundary Inputs](#generating-mom6-initial-and-boundary-inputs)
   - [Generating FV3 Initial and Boundary Inputs](#generating-fv3-initial-and-boundary-inputs)
@@ -43,20 +44,111 @@ These are existing run directories containing all inputs needed to run the corre
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
 * Arctic MOM6 Mesh Test (Arctic ocean grid with HAFS North American atmosphere grid):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/mom6_arctic_mesh_test/`
-* Arctic ATM and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
+* Arctic FV3 and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_ocn_atm_test`
+* Global FV3 and Arctic MOM6+CICE6 (using `ufs.nfrac.aoflux` coupling):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/global_atm_aoflux_with_cice`
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
 
-Generating all Initial and Boundary Inputs
-------------------------------------------
+Setting up initial working ATM OCN ICE configuration
+----------------------------------------------------
+The ATM+OCN+ICE configuration is currently a work in progress. It runs with global FV3 and regional Arctic MOM6+CICE6. Refer to `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/global_atm_aoflux_with_cice` on Hera for a working copy of the setup.
+
+Starting from the ATM+OCN only test case, the following changes are necessary:
+1) Add global files for the atmosphere to `INPUT` and adjust the `input.nml`
+  * Change values for `npx`,`npy`,`ntiles` as needed
+  * Under `gfs_physics_nml`, add `frac_grid = .false.`
+  * Remove the following lines:
+  ```
+  regional = .true.
+  bc_update_interval = 3
+  nrows_blend = 8
+  ```
+  * Adjust the values in the `*oro_data*.nc` files so that `land_mask` is all 1s or 0s (not sure if this is required)
+2) Obtain CICE6 input files from MOM6. Working copies for the current test grid can be found in the test case directory on Hera (`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/global_atm_aoflux_with_cice`). The necessary files are:
+  * `grid_cice_NEMS_mxarctic.nc`
+  * `kmtu_cice_NEMS_mxarctic.nc`
+  * `ice_in`
+3) Make the following changes to the `ufs.configure` file:
+  * Change `omp_num_threads` to 1 for all components.
+  * Add the ICE component.
+```
+# ICE #
+ICE_model:                      cice6
+ICE_petlist_bounds:             360 399
+ICE_omp_num_threads:            1
+ICE_attributes::
+  ProfileMemory = false
+  mesh_ice = INPUT/mom6_arctic_mesh.nc
+  eps_imesh = 2.5e-1
+  stop_n = 12
+  stop_option = nhours
+  stop_ymd = -999
+```
+  * Adjust the run sequence.
+```
+runSeq::
+@360
+  MED med_phases_prep_ocn_avg
+  MED -> OCN :remapMethod=redist
+  OCN
+  @180
+    MED med_phases_prep_atm
+    MED med_phases_prep_ice
+    MED -> ATM :remapMethod=redist
+    MED -> ICE :remapMethod=redist
+    ATM
+    ICE
+    ATM -> MED :remapMethod=redist
+    MED med_phases_post_atm
+    ICE -> MED :remapMethod=redist
+    MED med_phases_post_ice
+    MED med_phases_ocnalb_run
+    MED med_phases_prep_ocn_accum
+  @
+  OCN -> MED :remapMethod=redist
+  MED med_phases_post_ocn
+  MED med_phases_restart_write
+  MED med_phases_history_write
+@
+::
+```
+  * Change the coupling mode to `coupling_mode=ufs.nfrac.aoflux`
+4) Make sure the `ice_in` file contains the following (this file can be found from any regression test with CICE):
+  * Adjust start date, time step, etc.
+  * Under `&setup_nml`, set to use default ice instead of restart:
+  ```
+  ice_ic              = 'default'
+  restart             = .false.
+  restart_ext         = .false.
+  use_restart_time    = .false.
+  ```
+  * Under `&grid_nml` set `grid_type=regional`
+  * Under `&domain_nml` make sure `nprocs`, `nx_global`, `ny_global`, `block_size_x`, and `block_size_y` are compatible with grid and processor numbers. For the global ATM + Arctic OCN/ICE run, the following values are used:
+  ```
+  nprocs            = 40
+  nx_global         = 540
+  ny_global         = 696
+  block_size_x      = 54
+  block_size_y      = 87
+  ```
+5) Fix `input.nml` layout to `layout = 6,5`
+6) In `model_configure`, set `write_tasks_per_group: 60`
+7) In `MOM_input` increase the SSS limit to `BAD_VAL_SSS_MAX = 100.0`
+8) Adjust `job_card` to have the correct number of processes, etc.
+
+Further discussion on setup can be found in the section on CICE below.
+
+Generating FV3/MOM6 Initial and Boundary Inputs
+-----------------------------------------------
 This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. In the main directory, check the `config.in` file for accessible file locations and correct account information.
 2. Run `./run_all_prep`
 3. Output files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
 
-Generating MOM6 Initial and Boundary Inputs
--------------------------------------------
+Generating only MOM6 Initial and Boundary Inputs
+------------------------------------------------
 This will create only the ocean inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
 1. Go to the `ocn_prep` directory.
 2. Copy necessary MOM6 grid files into the `fix/` directory (on Hera: `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix`).
@@ -80,7 +172,7 @@ This is for generating the meshes necessary to run with MOM6 in UFS based on exi
 2. Copy both files to the directory containing an ocean mask file.
 * *Note*: This requires an `ocean_mask.nc` file containing longitude and latitude variables `x(ny,nx)` and `y(ny,nx)`, respectively. 
 * If you have these variables but with different names, edit the `gen_scrip.ncl` file lines 42 and 48 to the correct variable names.
-* If your mask file does not contain any center coordinates, you can add them from the ocean_hgrid.nc file by running the python script `add_center_coords.py`.
+* If your mask file does not contain any center coordinates, you can add them from the `ocean_hgrid.nc` file by running the python script `add_center_coords.py`.
 3. Edit `mesh_gen_job.sh` as needed, then run the code.
 `sbatch mesh_gen_job.sh`
 
@@ -134,7 +226,7 @@ ntiles = 1
 * Under `&gfs_physics_nml` edit:
 `cplwav = .false.`
 9. Edit `job_card`:
-* `#SBATCH –nodes=9`
+* `#SBATCH --nodes=9`
 * `srun --label -n 360 ./fv3.exe`
 10. Edit `model_configure`:
 * `write_tasks_per_group:   60`
@@ -168,13 +260,23 @@ ncks -x -v contact_index,contacts C96_mosaic.nc C96_mosaic.nc
 
 Notes on Running with CICE6
 ===========================
-Currently, there is no testcase using CICE6. Below are some points to consider when setting up CICE6:
-* Grid files for CICE6 must be generated based on the MOM6 ocean grid being used (see below)
-* Existing forecast datasets may be in CICE4 which will need to be converted to CICE6
-* The initial conditions contain many variables, and care will need to be taken to remap correctly while maintaining the correct classifications of different cells. 
+Currently, the CICE6 test configuration is still a work in progress.  some of the considerations made when setting up the working test case:
+* The current ocn/ice grid is non-overlapping with the regional atm grid in one corner south of Alaska. The global setup circumvents any need for dealing with data atmosphere in this location. Eventually, the goal is to have a regional atmosphere.
+* The coupling mode is set to `ufs.nfrac.aoflux`. This is due to the following reasons:
+  * The original `hafs.mom6` coupling does not include all the variables needed for ice.
+  * The fractional version of the coupling (`ufs.frac`) does not correctly map atmosphere -> ice/ocean, leading to missing data near shorelines in the variables sent to ice/ocn from atm.
+  * Techinally, `aoflux` is only meant for DATM runs. However, without it the run failed with the error "Invalid argument - key does not exist: aofrac" 
+* There seem to be momentarily large salinity values in MOM6, which is why the SSS limit is adjusted upwards. These values are not seen in the final output after 3 hours.
+* The configuration still fails when using a fully data atmosphere and a regional FV3 atmosphere.
+* The final output from the ice model includes a noticeable line along the longitude seam (see discussion link below).
+* Running CICE6 with `omp_num_threads=2` lead to a floating point exception in the `ice_import_export.F90` routine. It is able to get past this when set to 1 instead. 
+
+See [this UFS Github Discussion](https://github.com/ufs-community/ufs-weather-model/discussions/2657) for more information on some of the errors encountered in setting up the configuration.
 
 Generating CICE6 grid files
 ---------------------------
+**This may result in a file with all `NaN`s for the mask. If that happens, copy the mask from the ocean files into the ice files.**
+
 The following grid files are needed to run CICE6:
 * `grid_cice_NEMS_mx{res}.nc`
 * `kmtu_cice_NEMS_mx{res}.nc`
