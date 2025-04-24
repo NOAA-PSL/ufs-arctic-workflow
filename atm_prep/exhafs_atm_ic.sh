@@ -29,23 +29,23 @@ FGAT_HR=${FGAT_HR:-00}
 
 # Set options specific to the deterministic/ensemble forecast
 if [ ${ENSDA} != YES ]; then
-  NBDYHRS=${NBDYHRS:-3}
+  NATMBDYHRS=${NATMBDYHRS:-3}
   CASE=${CASE:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype:-regional}
   ictype=${ictype:-gfsnetcdf}
   bctype=${bctype:-gfsnetcdf}
   LEVS=${LEVS:-65}
-  GRID_intercom=${WORKatm}/intercom/grid
+  GRID_intercom=${ATM_RUN_DIR}/intercom/grid
 else
-  NBDYHRS=${NBDYHRS_ENS:-3}
+  NATMBDYHRS=${NATMBDYHRS_ENS:-3}
   CASE=${CASE_ENS:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype_ens:-regional}
   ictype=${ictype_ens:-gfsnetcdf}
   bctype=${bctype_ens:-gfsnetcdf}
   LEVS=${LEVS_ENS:-65}
-  GRID_intercom=${WORKatm}/intercom/grid_ens
+  GRID_intercom=${ATM_RUN_DIR}/intercom/grid_ens
 fi
 
 # Generate the ICs and BC hour 0
@@ -63,13 +63,13 @@ vcoord_file_target_grid=${vcoord_file_target_grid:-${FIXhafs}/fix_am/global_hybl
 
 if [ $GFSVER = "PROD2021" ]; then
  if [ ${ENSDA} = YES ]; then
-  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres_ens/mem${ENSID}}
+  export OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres_ens/mem${ENSID}}
   export INIDIR=${COMINgdas}/enkfgdas.${PDY_prior}/${cyc_prior}/atmos/mem${ENSID}
  elif [ ${FGAT_MODEL} = gdas ]; then
-  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres_fgat${FGAT_HR}}
+  export OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres_fgat${FGAT_HR}}
   export INIDIR=${COMINgdas}/gdas.${PDY_prior}/${cyc_prior}/atmos
  else
-  export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres}
+  export OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres}
   export INIDIR=${COMINgfs}/gfs.$PDY/$cyc/atmos
  fi
 else
@@ -77,7 +77,7 @@ else
   exit 9
 fi
 
-DATA=${DATA:-${WORKatm}/atm_ic}
+DATA=${DATA:-${ATM_RUN_DIR}/atm_ic}
 mkdir -p ${OUTDIR} ${DATA}
 
 FIXDIR=${DATA}/grid
@@ -381,8 +381,6 @@ EOF
 #${NCP} -p ${CHGRESCUBEEXEC} ./hafs_utils_chgres_cube.x
 ${SOURCE_PREP_STEP}
 ${APRUNC} ./hafs_utils_chgres_cube.x 2>&1 | tee ./chgres_cube_lbc.log
-export err=$?; err_chk
-
 
 mv out.atm.tile1.nc ${OUTDIR}/gfs_data.tile${itile}.nc
 mv out.sfc.tile1.nc ${OUTDIR}/sfc_data.tile${itile}.nc

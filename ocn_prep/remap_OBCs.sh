@@ -8,44 +8,58 @@
 #   This is the driver for the ocean boundary condition remapping steps. 
 #   This script is called by the setup script, but can be run in isolation
 ###
+CDATE=${CDATE:-'2020082512'}
+HH=`echo $CDATE | cut -c 9-10`
+NHRS=${NHRS:-'6'}
+NOCNBDYHRS=${NOCNBDYHRS:-'6'}
+FHR=0
+FHRI=0
 
 # !!! EDIT srun details if needed
-APRUNS=${APRUNS-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"}
+APRUNS=${APRUNS:-"srun --mem=0 --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"}
 
-INPUT_DIR=${INPUT_DIR-"inputs/"}
-FIX_DIR=${FIX_DIR-"fix/${OCNgrid}/"}
-OUTPUT_DIR=${OUTPUT_DIR-"intercom/"}
+INPUT_DIR=${OCN_RUN_DIR}/inputs/
+OUTPUT_DIR=${OCN_RUN_DIR}/intercom/
 
-OUT_FILE_PATH_BASE=${OUTPUT_DIR}${OUT_FILE_BASE-"mom6_OBC_"}
-WGT_FILE_PATH_BASE=${FIX_DIR}${WGT_FILE_BASE-"rtofs2hgrid_"}
-ANG_FILE_PATH_BASE=${FIX_DIR}${ANGLE_FILE_PATH_BASE-"ocean_hgrid_"}
-HGD_FILE_PATH_BASE=${FIX_DIR}${ANGLE_FILE_PATH_BASE-"ocean_hgrid_"}
-FILE_TAIL=${FILE_TAIL-".nc"}
+OUT_FILE_PATH_BASE=${OUTPUT_DIR}${OUT_FILE_BASE:-"mom6_OBC_"}
+WGT_FILE_PATH_BASE=${INPUT_DIR}${WGT_FILE_BASE:-"rtofs2hgrid_"}
+ANG_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
+HGD_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
+FILE_TAIL=${FILE_TAIL:-".nc"}
 
-VRT_FILE_PATH=${FIX_DIR}${VRT_FILE-"ocean_vgrid.nc"}
+VRT_FILE_PATH=${INPUT_DIR}${VRT_FILE:-"ocean_vgrid.nc"}
 
-SSH_VARNAME=${SSH_VARNAME-"ssh"}
-SSH_SRC_FILE_PATH=${INPUT_DIR}${SSH_SRC_FILE-"rtofs.f12_global_ssh_obc.nc"}
+SSH_VARNAME=${SSH_VARNAME:-"ssh"}
 
-TMP_VARNAME=${TMP_VARNAME-"pot_temp"}
-TMP_VARNAME_OUT=${TMP_VARNAME_OUT-"temp"}
-SAL_VARNAME=${SAL_VARNAME-"salinity"}
-TS_SRC_FILE_PATH=${INPUT_DIR}${TS_SRC_FILE-"rtofs.f12_global_ts_obc.nc"}
+TMP_VARNAME=${TMP_VARNAME:-"pot_temp"}
+TMP_VARNAME_OUT=${TMP_VARNAME_OUT:-"temp"}
+SAL_VARNAME=${SAL_VARNAME:-"salinity"}
 
-U_VARNAME=${U_VARNAME-"u"}
-V_VARNAME=${V_VARNAME-"v"}
-UV_SRC_FILE_PATH=${INPUT_DIR}${UV_SRC_FILE-"rtofs.f12_global_uv_obc.nc"}
+U_VARNAME=${U_VARNAME:-"u"}
+V_VARNAME=${V_VARNAME:-"v"}
 
-ANGLE_VARNAME=${ANGLE_VARNAME-"angle_dx"}
-ANGLE_SRC_FILE_PATH=${FIX_DIR}${ANGLE_SRC_FILE-"ocean_hgrid.nc"}
-CONVERT_ANGLE=${CONVERT_ANGLE-"False"}
+ANGLE_VARNAME=${ANGLE_VARNAME:-"angle_dx"}
+ANGLE_SRC_FILE_PATH=${INPUT_DIR}${ANGLE_SRC_FILE:-"ocean_hgrid.nc"}
+CONVERT_ANGLE=${CONVERT_ANGLE:-"False"}
 
-DZ_VARNAME=${DZ_VARNAME-"dz"}
-TIME_VARNAME=${TIME_VARNAME-"MT"}
-TIME_VARNAME_OUT=${TIME_VARNAME_OUT-"time"}
+DZ_VARNAME=${DZ_VARNAME:-"dz"}
+TIME_VARNAME=${TIME_VARNAME:-"MT"}
+TIME_VARNAME_OUT=${TIME_VARNAME_OUT:-"time"}
 
 start=1
 end=4
+
+while [ $FHR -lt ${NHRS} ]; do
+echo "Doing remapping for time step ${FHR}/${NHRS}"
+NEWDATE=$(${NDATE} +${FHR} $CDATE)
+HH=$(echo $NEWDATE | cut -c9-10)
+echo $NEWDATE
+echo $HH
+echo $FHRI
+
+SSH_SRC_FILE_PATH=${INPUT_DIR}${SSH_SRC_FILE:-"rtofs.f${HH}_global_ssh_obc.nc"}
+TS_SRC_FILE_PATH=${INPUT_DIR}${TS_SRC_FILE:-"rtofs.f${HH}_global_ts_obc.nc"}
+UV_SRC_FILE_PATH=${INPUT_DIR}${UV_SRC_FILE:-"rtofs.f${HH}_global_uv_obc.nc"}
 
 ##########################
 # SSH Variable Remapping #
@@ -65,7 +79,8 @@ for i in $(seq -f "%03g" $start $end); do
         --out_file ${OUT_FILE_PATH} \
         --dz_name ${DZ_VARNAME} \
         --time_name ${TIME_VARNAME} \
-        --time_name_out ${TIME_VARNAME_OUT}
+        --time_name_out ${TIME_VARNAME_OUT} \
+        --forecast_iter ${FHRI}
 done
 echo ""
 
@@ -87,7 +102,8 @@ for i in $(seq -f "%03g" $start $end); do
         --out_file ${OUT_FILE_PATH} \
         --dz_name ${DZ_VARNAME} \
         --time_name ${TIME_VARNAME} \
-        --time_name_out ${TIME_VARNAME_OUT}
+        --time_name_out ${TIME_VARNAME_OUT} \
+        --forecast_iter ${FHRI}
 done
 echo ""
 
@@ -108,7 +124,8 @@ for i in $(seq -f "%03g" $start $end); do
         --out_file ${OUT_FILE_PATH} \
         --dz_name ${DZ_VARNAME} \
         --time_name ${TIME_VARNAME} \
-        --time_name_out ${TIME_VARNAME_OUT}
+        --time_name_out ${TIME_VARNAME_OUT} \
+        --forecast_iter ${FHRI}
 done
 echo ""
 
@@ -130,10 +147,14 @@ for i in $(seq -f "%03g" $start $end); do
         --out_file ${OUT_FILE_PATH} \
         --dz_name ${DZ_VARNAME} \
         --time_name ${TIME_VARNAME} \
-        --time_name_out ${TIME_VARNAME_OUT}
-#        --convert_angle_to_center ${CONVERT_ANGLE}
+        --time_name_out ${TIME_VARNAME_OUT} \
+        --convert_angle_to_center ${CONVERT_ANGLE} \
+        --forecast_iter ${FHRI}
 done
 echo ""
+FHR=$((FHR+NOCNBDYHRS))
+FHRI=$((FHRI+1))
+done # Finish all forecast steps
 
 #######################
 # Format netcdf files #

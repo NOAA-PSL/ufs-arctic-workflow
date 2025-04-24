@@ -98,7 +98,7 @@ class _Remapper2DScalar(_RemapperBase):
 
         self.remapped = data_interp
 
-    def write_to_file(self, out_file, dz_name_out, time_name_out, *var_name_out):
+    def write_to_file(self, out_file, dz_name_out, time_name_out, forecast_iter, *var_name_out):
         var_name_out = var_name_out[0] # Should only have one input for Scalar Classes
         if self.remapped is None:
             raise ValueError(f"No remapped data to write out.")
@@ -106,13 +106,18 @@ class _Remapper2DScalar(_RemapperBase):
         __, ny, nx = np.shape(self.remapped)
 
         with Dataset(out_file, 'a', format='NETCDF4') as ds:
-            if 'yh' not in ds.dimensions:
-                ds.createDimension('yh', ny)
-            if 'xh' not in ds.dimensions:
-                ds.createDimension('xh', nx)
-            if var_name_out not in ds.variables:
-                var = ds.createVariable(var_name_out, 'f4', (time_name_out, 'yh', 'xh'), fill_value=1.e+20)
-                var[:] = self.remapped
+            if (forecast_iter == 0): # First timestep
+                if 'yh' not in ds.dimensions:
+                    ds.createDimension('yh', ny)
+                if 'xh' not in ds.dimensions:
+                    ds.createDimension('xh', nx)
+                if var_name_out not in ds.variables:
+                    var = ds.createVariable(var_name_out, 'f4', (time_name_out, 'yh', 'xh'), fill_value=1.e+20)
+                    var[:] = self.remapped
+            else: # Append subsequent timesteps
+                var = ds.variables[var_name_out]
+                var[forecast_iter,:,:] = self.remapped[0,:,:]
+                
     
 #######################
 ### 3D Scalar Class ###
@@ -144,7 +149,7 @@ class _Remapper3DScalar(_RemapperBase):
 
         self.remapped = data_interp
 
-    def write_to_file(self, out_file, dz_name_out, time_name_out, *var_name_out):
+    def write_to_file(self, out_file, dz_name_out, time_name_out, forecast_iter, *var_name_out):
         var_name_out = var_name_out[0] # Should only have one input for Scalar Classes
         if self.remapped is None:
             raise ValueError(f"No remapped data to write out.")
@@ -152,13 +157,18 @@ class _Remapper3DScalar(_RemapperBase):
         __, __, ny, nx = np.shape(self.remapped)
 
         with Dataset(out_file, 'a', format='NETCDF4') as ds:
-            if 'yh' not in ds.dimensions:
-                ds.createDimension('yh', ny)
-            if 'xh' not in ds.dimensions:
-                ds.createDimension('xh', nx)
-            if var_name_out not in ds.variables:
-                var = ds.createVariable(var_name_out, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
-                var[:] = self.remapped
+            print(f"Forecast iter is {forecast_iter}")
+            if (forecast_iter == 0): # First timestep
+                if 'yh' not in ds.dimensions:
+                    ds.createDimension('yh', ny)
+                if 'xh' not in ds.dimensions:
+                    ds.createDimension('xh', nx)
+                if var_name_out not in ds.variables:
+                    var = ds.createVariable(var_name_out, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
+                    var[:] = self.remapped
+            else: # Append subsequent timesteps
+                var = ds.variables[var_name_out]
+                var[forecast_iter,:,:,:] = self.remapped[0,:,:,:]
 
 #######################
 ### 3D Vector Class ###
@@ -315,7 +325,7 @@ class _Remapper3DVector(_RemapperBase):
     
         return cvar
 
-    def write_to_file(self, out_file, dz_name_out, time_name_out, *var_name_out):
+    def write_to_file(self, out_file, dz_name_out, time_name_out, forecast_iter, *var_name_out):
         if self.remapped is None:
             raise ValueError(f"No remapped data to write out.")
 
@@ -327,34 +337,49 @@ class _Remapper3DVector(_RemapperBase):
         if self.staggered: # U and V are located on different subgrids
             # Write u out
             with Dataset(out_file, 'a', format='NETCDF4') as ds:
-                if 'yh' not in ds.dimensions:
-                    ds.createDimension('yh', ny)
-                if 'xq' not in ds.dimensions:
-                    ds.createDimension('xq', nx)
-                if u_name not in ds.variables:
-                    var = ds.createVariable(u_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xq'), fill_value=1.e+20)
-                    var[:] = self.remapped[0]
+                if (forecast_iter==0):
+                    if 'yh' not in ds.dimensions:
+                        ds.createDimension('yh', ny)
+                    if 'xq' not in ds.dimensions:
+                        ds.createDimension('xq', nx)
+                    if u_name not in ds.variables:
+                        var = ds.createVariable(u_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xq'), fill_value=1.e+20)
+                        var[:] = self.remapped[0]
+                else:
+                    var = ds.variables[u_name]
+                    var[forecast_iter,:,:,:] = self.remapped[0][0,:,:,:]
 
             # Write v out
             __, __, ny, nx = np.shape(self.remapped[1])
 
             with Dataset(out_file, 'a', format='NETCDF4') as ds:
-                if 'yq' not in ds.dimensions:
-                    ds.createDimension('yq', ny)
-                if 'xh' not in ds.dimensions:
-                    ds.createDimension('xh', nx)
-                if v_name not in ds.variables:
-                    var = ds.createVariable(v_name, 'f4', (time_name_out, dz_name_out, 'yq', 'xh'), fill_value=1.e+20)
-                    var[:] = self.remapped[1]
+                if (forecast_iter == 0):
+                    if 'yq' not in ds.dimensions:
+                        ds.createDimension('yq', ny)
+                    if 'xh' not in ds.dimensions:
+                        ds.createDimension('xh', nx)
+                    if v_name not in ds.variables:
+                        var = ds.createVariable(v_name, 'f4', (time_name_out, dz_name_out, 'yq', 'xh'), fill_value=1.e+20)
+                        var[:] = self.remapped[1]
+                else:
+                    var = ds.variables[v_name]
+                    var[forecast_iter,:,:,:] = self.remapped[1][0,:,:,:]
+
         else: # U and V are colocated
             with Dataset(out_file, 'a', format='NETCDF4') as ds:
-                if 'yh' not in ds.dimensions:
-                    ds.createDimension('yh', ny)
-                if 'xh' not in ds.dimensions:
-                    ds.createDimension('xh', nx)
-                if u_name not in ds.variables:
-                    var = ds.createVariable(u_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
-                    var[:] = self.remapped[0]
-                if v_name not in ds.variables:
-                    var = ds.createVariable(v_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
-                    var[:] = self.remapped[1]
+                if (forecast_iter == 0):
+                    if 'yh' not in ds.dimensions:
+                        ds.createDimension('yh', ny)
+                    if 'xh' not in ds.dimensions:
+                        ds.createDimension('xh', nx)
+                    if u_name not in ds.variables:
+                        var = ds.createVariable(u_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
+                        var[:] = self.remapped[0]
+                    if v_name not in ds.variables:
+                        var = ds.createVariable(v_name, 'f4', (time_name_out, dz_name_out, 'yh', 'xh'), fill_value=1.e+20)
+                        var[:] = self.remapped[1]
+                else:
+                    uvar = ds.variables[u_name]
+                    uvar[forecast_iter,:,:,:] = self.remapped[0][0,:,:,:]
+                    vvar = ds.variables[v_name]
+                    vvar[forecast_iter,:,:,:] = self.remapped[1][0,:,:,:]

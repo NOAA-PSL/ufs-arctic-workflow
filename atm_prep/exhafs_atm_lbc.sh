@@ -24,28 +24,28 @@ ENSDA=${ENSDA:-NO}
 
 # Set options specific to the deterministic/ensemble forecast
 if [ ${ENSDA} != YES ]; then
-  NBDYHRS=${NBDYHRS:-3}
+  NATMBDYHRS=${NATMBDYHRS:-3}
   CASE=${CASE:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype:-regional}
   ictype=${ictype:-gfsnetcdf}
   bctype=${bctype:-gfsnetcdf}
   LEVS=${LEVS:-65}
-  GRID_intercom=${WORKatm}/intercom/grid
-  FHRB=$(( ${BC_GROUPI} * ${NBDYHRS} ))
-  FHRI=$(( ${BC_GROUPN} * ${NBDYHRS} ))
+  GRID_intercom=${ATM_RUN_DIR}/intercom/grid
+  FHRB=$(( ${BC_GROUPI} * ${NATMBDYHRS} ))
+  FHRI=$(( ${BC_GROUPN} * ${NATMBDYHRS} ))
   FHRE=${NHRS}
 else
-  NBDYHRS=${NBDYHRS_ENS:-3}
+  NATMBDYHRS=${NATMBDYHRS_ENS:-3}
   CASE=${CASE_ENS:-C768}
   CRES=$(echo $CASE | cut -c 2-)
   gtype=${gtype_ens:-regional}
   ictype=${ictype_ens:-gfsnetcdf}
   bctype=${bctype_ens:-gfsnetcdf}
   LEVS=${LEVS_ENS:-65}
-  GRID_intercom=${WORKatm}/intercom/grid_ens
-  FHRB=$(( ${BC_GROUPI} * ${NBDYHRS_ENS} ))
-  FHRI=$(( ${BC_GROUPN} * ${NBDYHRS_ENS} ))
+  GRID_intercom=${ATM_RUN_DIR}/intercom/grid_ens
+  FHRB=$(( ${BC_GROUPI} * ${NATMBDYHRS_ENS} ))
+  FHRI=$(( ${BC_GROUPN} * ${NATMBDYHRS_ENS} ))
   FHRE=${NHRS_ENS}
 fi
 
@@ -69,10 +69,10 @@ fi
 
 if [ $GFSVER = "PROD2021" ]; then
   if [ ${ENSDA} = YES ]; then
-    export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres_ens/mem${ENSID}}
+    export OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres_ens/mem${ENSID}}
     export INIDIR=${COMINgdas}/enkfgdas.${PDY}/${cyc}/atmos/mem${ENSID}
   else
-    export OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres}
+    export OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres}
     export INIDIR=${COMINgfs}/gfs.$PDY/$cyc/atmos
   fi
 else
@@ -80,13 +80,13 @@ else
   exit 9
 fi
 
-OUTDIR=${OUTDIR:-${WORKatm}/intercom/chgres}
-DATA=${DATA:-${WORKatm}/atm_lbc}
+OUTDIR=${OUTDIR:-${ATM_RUN_DIR}/intercom/chgres}
+DATA=${DATA:-${ATM_RUN_DIR}/atm_lbc}
 mkdir -p ${OUTDIR} ${DATA}
 
-FHRB=${FHRB:-${NBDYHRS}}
+FHRB=${FHRB:-${NATMBDYHRS}}
 FHRE=${FHRE:-${NHRS}}
-FHRI=${FHRI:-${NBDYHRS}}
+FHRI=${FHRI:-${NATMBDYHRS}}
 
 # If desired, deletes all the BC output files in intercom
 if [ "${BC_CLEANUP^^}" = "YES" ]; then

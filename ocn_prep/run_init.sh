@@ -18,55 +18,52 @@
 # EDIT THIS SECTION AS NEEDED
 # These variables are normally set by the run namelist parameters
 
-export CDATE=${CDATE:-'2020082512'}
-export CDATEprior=${CDATEprior:-'2020082506'}
-export cyc=${cyc:-'12'}
-export STORM=${STORM:-'NATL'}
-export STORMID=${STORMID:-'00L'}
-export NHRS=${NHRS:-'6'}
-export FHRB=${FHRB:-'0'}
-export FHRI=${FHRI:-'3'}
-export FHR=${FHR:-'0'}
+CDATE=${CDATE:-'2020082512'}
+CDATEprior=${CDATEprior:-'2020082506'}
+cyc=${cyc:-'12'}
+STORM=${STORM:-'NATL'}
+STORMID=${STORMID:-'00L'}
+NHRS=${NHRS:-'6'}
+NOCNBDYHRS=${NOCNBDYHRS:-'6'}
+FHRB=${FHRB:-'0'}
+FHRI=${FHRI:-'3'}
+FHR=${FHR:-'0'}
+FHRB=${NHRS:-'6'}
 
-export NLN=${NLN:-"ln -s"}
-export NCP=${NCP:-"cp"}
-export WGRIB2=${WGRIB2:-"wgrib2"}
+NLN=${NLN:-"ln -s"}
+NCP=${NCP:-"cp"}
+WGRIB2=${WGRIB2:-"wgrib2"}
 
 # !!! Edit for your system/account !!!
-export APRUNS=${APRUNS:-"srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=gsienkf"}
+export APRUNS=${APRUNS:-"srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"}
 
 # !!! Edit for your working directory (where the initial files will be placed) !!!
-#export WORKhafs=${WORKhafs:-"/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/ocn_prep_test/ocn_prep/cleanup/ocn_prep"}
-export OCNgrid=${OCNgrid:-"ARC12"}
-export WORKocn=${WORKocn:-"$(pwd)"}
-export FIXdir=${WORKocn}/fix/${OCNgrid}/
+export OCN_GRID_NAME=${OCN_GRID_NAME:-"ARC12"}
+export OCN_SCRIPT_DIR=${OCN_SCRIPT_DIR:-"$(pwd)"}
+export OCN_RUN_DIR=${OCN_RUN_DIR:-"$(pwd)"}
+export OCN_GRID_DIR=${OCN_GRID_DIR:-"/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"}
 
 # !!! Edit for your local dataset locations !!!
 # These can be found by checking the relevant system.conf file in the parm/ directory of the HAFS repository.
-export COMINrtofs=${COMINrtofs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"}
-export COMINgfs=${COMINgfs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"}
+COMINrtofs=${COMINrtofs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"}
+COMINgfs=${COMINgfs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"}
 
 # !!! Edit for your HAFS directory (if needed) !!!
-export HAFSdir=${HAFSdir:-"/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"}
-export FIXhafs="${HAFSdir}/fix/"
-export PARMhafs="${HAFSdir}/parm/"
-export EXEChafs="${HAFSdir}/exec/"
-export USHhafs="${HAFSdir}/ush/"
-export MODhafs="${HAFSdir}/modulefiles/"
+HAFSdir=${HAFSdir:-"/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"}
+FIXhafs= ${FIXhafs:-"${HAFSdir}/fix/"}
+PARMhafs=${PARMhafs:-"${HAFSdir}/parm/"}
+EXEChafs=${EXEChafs:-"${HAFSdir}/exec/"}
+USHhafs= ${USHhafs:-"${HAFSdir}/ush/"}
+MODhafs= ${MODhafs:-"${HAFSdir}/modulefiles/"}
 
 module use ${MODhafs}
 module load hafs_mom6_obc.hera.lua # !!! Edit for your system
 module load cdo
 
 # The rest of the parameters below are set automatically
-CDATE=${CDATE:-${YMDH}}
-cyc=${cyc:-00}
-STORM=${STORM:-FAKE}
-STORMID=${STORMID:-00L}
-
 ymd=`echo $CDATE | cut -c 1-8`
 hour=`echo $CDATE | cut -c 9-10`
-#CDATEprior=`${NDATE} -6 $CDATE`
+CDATEprior=`${NDATE} -6 $CDATE`
 ymd_prior=`echo ${CDATEprior} | cut -c1-8`
 cyc_prior=`echo ${CDATEprior} | cut -c9-10`
 
@@ -77,8 +74,8 @@ else
 fi
 
 # Make the intercom dir
-mkdir -p ${WORKocn}/intercom/
-mkdir -p ${WORKocn}/inputs/
+mkdir -p ${OCN_RUN_DIR}/intercom/
+mkdir -p ${OCN_RUN_DIR}/inputs/
 
 ymd=`echo $CDATE | cut -c 1-8`
 hour=`echo $CDATE | cut -c 9-10`
@@ -89,13 +86,12 @@ else
 fi
 
 FHRB=0
-FHRE=9
 FHRI=3
 FHR=0
 FHR3=000
 
 FHRB=${FHRB:-0}
-FHRE=${FHRE:-$((${NHRS}+3))}
+FHRE=$((${NHRS}+3))
 FHRI=${FHRI:-3}
 FHR=${FHRB}
 FHR3=$( printf "%03d" "$FHR" )
@@ -105,11 +101,11 @@ FHR3=$( printf "%03d" "$FHR" )
 # ----------------------------------------------------------------------------------- #
 
 # Retrive the regridding weights and ocean grid files
-mkdir -p ${FIXdir}
-${NLN} /scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCNgrid}/input_files/* ${FIXdir}/.
+mkdir -p ${OCN_RUN_DIR}/inputs/
+${NLN} ${OCN_GRID_DIR}/* ${OCN_RUN_DIR}/inputs/.
+${NLN} ${OCN_SCRIPT_DIR}/inputs/* ${OCN_RUN_DIR}/inputs/.
 
-cd ${WORKocn}/inputs/
-echo $(pwd)
+cd ${OCN_RUN_DIR}/inputs/
 
 # Names of output files and Hycom Utilities inputs
 outnc_2d=global_ssh_ic.nc
@@ -149,54 +145,97 @@ fi
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_ic.in 2>&1 | tee archv2ncdf3z_3d_ic.log
 ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_ic.in 2>&1 | tee ./archv2ncdf2d_ssh_ic.log
 
-cd ${FIXdir}
+cd ${OCN_RUN_DIR}/inputs/
 
-if [ ! -e "${FIXdir}/rtofs2hgrid_001.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_001.nc" ]; then
     echo "File rtofs2hgrid_001.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${WORKocn}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_001.nc -w rtofs2hgrid_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_001.nc -w rtofs2hgrid_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${FIXdir}/rtofs2hgrid_002.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_002.nc" ]; then
     echo "File rtofs2hgrid_002.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${WORKocn}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_002.nc -w rtofs2hgrid_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_002.nc -w rtofs2hgrid_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${FIXdir}/rtofs2hgrid_003.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_003.nc" ]; then
     echo "File rtofs2hgrid_003.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${WORKocn}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_003.nc -w rtofs2hgrid_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_003.nc -w rtofs2hgrid_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${FIXdir}/rtofs2hgrid_004.nc" ]; then
+if [ ! -e "${OCN_RUN_DIR}/inputs/rtofs2hgrid_004.nc" ]; then
     echo "File rtofs2hgrid_004.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${WORKocn}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_004.nc -w rtofs2hgrid_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    ${APRUNS} ESMF_RegridWeightGen -s ${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc -d ocean_hgrid_004.nc -w rtofs2hgrid_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
 
-cd ${WORKocn}
+cd ${OCN_SCRIPT_DIR}
 ./remap_ICs.sh
+
+# Unlink global RTOFS analysis or forecast files
+unlink archv_in.a
+unlink archv_in.b
 
 # ----------------------------------------------------------------------------------- #
 #                                   OBC Setup                                         #
 # ----------------------------------------------------------------------------------- #
 
-cd ${WORKocn}/inputs/
+cd ${OCN_RUN_DIR}/inputs/
 
 # Define output file names and HYCOM variables
 outnc_2d=global_ssh_obc.nc
 outnc_ts=global_ts_obc.nc
 outnc_uv=global_uv_obc.nc
-export CDF038=rtofs.${type}${hour}_${outnc_2d}
-export CDF034=rtofs.${type}${hour}_${outnc_ts}
-export CDF033=rtofs.${type}${hour}_${outnc_uv}
+echo $FHR
+echo $NHRS
+while [ $FHR -lt ${NHRS} ]; do
+  NEWDATE=$(${NDATE} +${FHR} $CDATE)
+  echo "NEWDATE:"
+  echo $NEWDATE
+  NEWymd=`echo $NEWDATE | cut -c 1-8`
+  HH=$(echo $NEWDATE | cut -c9-10)
+  echo "Hour:"
+  echo $HH
 
-# run HYCOM-tools executables to produce OBC netcdf files
-${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_obc.in 2>&1 | tee ./archv2ncdf2d_ssh_obc.log
-${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_obc.in 2>&1 | tee ./archv2ncdf3z_3d_obc.log
+  if [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a ]; then
+    ${NLN} ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a archv_in.a
+  elif [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz ]; then
+    tar -xpvzf ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz
+    ${NLN} rtofs_glo.t00z.${type}${HH}.archv.a archv_in.a
+  else
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a does not exist."
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a.tgz does not exist either."
+    echo "FATAL ERROR: Cannot generate MOM6 OBC. Exiting"
+    exit 1
+  fi
+  if [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b ]; then
+    ${NLN} ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b archv_in.b
+  else
+    echo "FATAL ERROR: ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.b does not exist."
+    echo "FATAL ERROR: Cannot generate MOM6 OBC. Exiting"
+    exit 1
+  fi
 
-cd ${WORKocn}
+  export CDF038=rtofs.${type}${HH}_${outnc_2d}
+  export CDF034=rtofs.${type}${HH}_${outnc_ts}
+  export CDF033=rtofs.${type}${HH}_${outnc_uv}
+  
+  # Run HYCOM-tools executables to produce OBC netcdf files
+  ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_obc.in 2>&1 | tee ./archv2ncdf2d_ssh_obc.log
+  ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_obc.in 2>&1 | tee ./archv2ncdf3z_3d_obc.log
+
+  # next obc hour
+  FHR=$((FHR+NOCNBDYHRS))
+  FHR3=$(printf "%03d" "$FHR")
+  unlink archv_in.a
+  unlink archv_in.b
+
+done
+
+cd ${OCN_SCRIPT_DIR}
 ./remap_OBCs.sh
 
 # ----------------------------------------------------------------------------------- #
 #                                GFS Forcing Setup                                    #
 # ----------------------------------------------------------------------------------- #
 
-cd ${WORKocn}/inputs/
+FHR=0
+cd ${OCN_RUN_DIR}/inputs/
 
 # Prepare data atmosphere forcings from GFS
 PARMave=":USWRF:surface|:DSWRF:surface|:ULWRF:surface|:DLWRF:surface|:UFLX:surface|:VFLX:surface|:SHTFL:surface|:LHTFL:surface"
@@ -215,6 +254,7 @@ ${WGRIB2} ${grib2_file} -match "${PARMlist}" -netcdf gfs_global_${ymd_prior}${cy
 
 ## Loop for forecast hours
 while [ $FHR -le ${FHRE} ]; do
+  echo "$FHR/${FHRE}"
 
   # Use gfs 0.25 degree grib2 files
   grib2_file=${COMINgfs}/gfs.${ymd}/${cyc}/atmos/gfs.t${cyc}z.pgrb2.0p25.f${FHR3}
@@ -324,7 +364,7 @@ fileall="gfs_global_${CDATE}_NETLW.nc \
 module load cdo
 cdo merge ${fileall} gfs_forcings.nc
 
-${NCP} gfs_forcings.nc ${WORKocn}/intercom/.
+${NCP} gfs_forcings.nc ${OCN_RUN_DIR}/intercom/.
 
 # ----------------------------------------------------------------------------------- #
 #                                    Complete!                                        #

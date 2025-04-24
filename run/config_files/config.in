@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Ocean grid type -- current Arctic MOM6 grid is ARC12
+export OCN_GRID_NAME="ARC12"
+
+# Currently, only Hera has been tested
+export system="hera"
+
+# Set account for srun commands
+SACCT="gsienkf"
+
+# Locations to retrieve datasets from
+export ATM_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
+export OCN_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
+
+# Working directory locations
+export MAIN_DIR="$(pwd)/../" # Top level directory
+export RUN_DIR="$(pwd)/" # Current run directory
+export ATM_SCRIPT_DIR="${MAIN_DIR}/atm_prep/"
+export OCN_SCRIPT_DIR="${MAIN_DIR}/ocn_prep/"
+export ATM_RUN_DIR="${RUN_DIR}/atm_prep/"
+export OCN_RUN_DIR="${RUN_DIR}/ocn_prep/"
+
+# Point to HAFS directory locations
+export HAFSdir="/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"
+export FIXhafs="${HAFSdir}/fix/"
+export PARMhafs="${HAFSdir}/parm/"
+export EXEChafs="${HAFSdir}/exec/"
+export USHhafs="${HAFSdir}/ush/"
+export MODhafs="${HAFSdir}/modulefiles/"
+export COMINrtofs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"
+export COMINgfs="/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"
+
+# Run Parameters -- Used by HAFS scripts
+export CDATE=2020082512
+export PDY=20200825
+export NDATE="/scratch1/NCEPDEV/nems/role.epic/spack-stack/spack-stack-1.6.0/envs/unified-env-rocky8/install/intel/2021.5.0/prod-util-2.1.1-4vpcrpl/bin/ndate"
+export CDATEprior=$(${NDATE} -6 ${CDATE})
+export cyc=12
+export nest_grids=-1
+export CASE="C96"
+export LEVS=65
+export NHRS=6 # Total number of forecast hours
+export NBDYHRS=3 # Hour steps at which boundary conditions are generated 
+
+export GFSVER="PROD2021"
+export nest_grids=-1
+export halo_blend=10
+
+export BC_GROUPI=1
+export BC_GROUPN=1
+export FHRB=0
+export FHRI=3
+export FHR=0
+
+export gtype=regional
+export ictype=gfsnetcdf
+export bctype=gfsnetcdf
+
+# Commands
+export APRUNC="srun --time=10:00 --ntasks=30 --ntasks-per-node=10 --cpus-per-task=1 --account=${SACCT}"
+export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 --account=${SACCT}"
+export NLN="ln -s"
+export PLN="ln -s"
+export RLN="ln =s"
+export NCP="cp"
+export WGRIB2="wgrib2"
