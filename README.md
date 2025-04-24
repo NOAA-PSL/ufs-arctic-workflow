@@ -261,13 +261,13 @@ ncks -x -v contact_index,contacts C96_mosaic.nc C96_mosaic.nc
 
 Notes on Running with CICE6
 ===========================
-Currently, the CICE6 test configuration is still a work in progress.  some of the considerations made when setting up the working test case:
+Currently, the CICE6 test configuration is still a work in progress. Some of the considerations made when setting up the working test case:
 * The current ocn/ice grid is non-overlapping with the regional atm grid in one corner south of Alaska. The global setup circumvents any need for dealing with data atmosphere in this location. Eventually, the goal is to have a regional atmosphere.
 * The coupling mode is set to `ufs.nfrac.aoflux`. This is due to the following reasons:
   * The original `hafs.mom6` coupling does not include all the variables needed for ice.
   * The fractional version of the coupling (`ufs.frac`) does not correctly map atmosphere -> ice/ocean, leading to missing data near shorelines in the variables sent to ice/ocn from atm.
   * Techinally, `aoflux` is only meant for DATM runs. However, without it the run failed with the error "Invalid argument - key does not exist: aofrac" 
-* There seem to be momentarily large salinity values in MOM6, which is why the SSS limit is adjusted upwards. These values are not seen in the final output after 3 hours.
+* There seem to be momentarily large salinity values in MOM6 at the start of the run, which is why the SSS limit is adjusted upwards. The large values do not show up in the final output.
 * The configuration still fails when using a fully data atmosphere and a regional FV3 atmosphere.
 * The final output from the ice model includes a noticeable line along the longitude seam (see discussion link below).
 * Running CICE6 with `omp_num_threads=2` lead to a floating point exception in the `ice_import_export.F90` routine. It is able to get past this when set to 1 instead. 
