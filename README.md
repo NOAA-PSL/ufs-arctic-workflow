@@ -50,6 +50,8 @@ These are existing run directories containing all inputs needed to run the corre
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/global_atm_aoflux_with_cice`
 * Regional Arctic FV3+MOM6+CICE6 (using default ice initial conditions):
 `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_fv3_mom6_cice6`
+* Regional Arctic FV3+MOM6+CICE6 (with ice initial conditions from file):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_arctic_with_ice_ics`
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
 
@@ -264,7 +266,7 @@ Currently, the CICE6 test configuration is still a work in progress. Some of the
 * The atmosphere->ocn/ice mapping leads to failure unless mapping types in ufs coupling are switched to `mapbilnr_nstod`. [This fork of the UFS Weather Model](https://github.com/kristinbarton/ufs-weather-model) has a `ufs.arctic` coupling mode which accomplishes this.
 * There seem to be momentarily large salinity values in MOM6 at the start of the run, which is why the SSS limit is adjusted upwards. The large values do not show up in the final output.
 * Running CICE6 with `omp_num_threads=2` lead to a floating point exception in the `ice_import_export.F90` routine. It seems that threading is not fully supported in CICE6, so this must be set to 1 to work correctly.
-* Currently, only setting the ice inputs to `default` works. Using an initial condition file is currently leading to `NaN`s popping up in some albedo variables when set to debug mode.
+* Take care when generating ice initial conditions files, as if there is ice concentration over a masked land cell it will lead to a floating point exception in the CICE6 model.
 
 See [this UFS Github Discussion](https://github.com/ufs-community/ufs-weather-model/discussions/2657) for more information on some of the errors encountered in setting up the configuration.
 
