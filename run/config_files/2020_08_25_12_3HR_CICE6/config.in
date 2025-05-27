@@ -12,7 +12,7 @@ SACCT="gsienkf"
 # Locations to retrieve datasets from
 export ATM_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
 export OCN_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
-export ICE_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/input_data/CICE6/ics"
+export ICE_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/input_data/CICE6/"
 
 # Working directory locations
 export MAIN_DIR="$(pwd)/../" # Top level directory
