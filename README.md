@@ -40,20 +40,52 @@ Accessing Existing Test Cases (Hera)
 ------------------------------------
 These are existing run directories containing all inputs needed to run the corresponding test case. Each one can be run independently of the others.
 1. Recursively copy all files from the directory on Hera to your working directory.
-* Regional Static FV3 + MOM6 (Uses HAFS North Atlantic grid for both ocean and atmosphere):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_static_test/`
-* Arctic MOM6 Mesh Test (Arctic ocean grid with HAFS North American atmosphere grid):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/mom6_arctic_mesh_test/`
-* Arctic FV3 and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arctic_ocn_atm_test`
-* Global FV3 and Arctic MOM6+CICE6 (using `ufs.nfrac.aoflux` coupling):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/global_atm_aoflux_with_cice`
-* Regional Arctic FV3+MOM6+CICE6 (using default ice initial conditions):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_fv3_mom6_cice6`
-* Regional Arctic FV3+MOM6+CICE6 (with ice initial conditions from file):
-`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/regional_arctic_with_ice_ics`
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
+
+Directories:
+* Static North Atlantic Atmosphere / Ocean:
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_ocn/`
+  * Components: FV3+MOM6
+  * ATM grid: N. America (HAFS grid)
+  * OCN grid: N. Atlantic (HAFS grid)
+  * UFS Version: ufs-community/ufs-weather-model (f3ce169)
+  * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+* Arctic MOM6 Mesh Test (Arctic ocean grid with HAFS North American atmosphere grid):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_arc_ocn/`
+  * Components: FV3+MOM6
+  * ATM grid: N. America (HAFS grid)
+  * OCN grid: 10km Arctic
+  * UFS Version: ufs-community/ufs-weather-model (f3ce169)
+  * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+* Arctic FV3 and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_tile_atm_ocn/`
+  * Components: FV3+MOM6
+  * ATM grid: C96 Arctic Tile
+  * OCN grid: 10km Arctic
+  * UFS Version: ufs-community/ufs-weather-model (f3ce169)
+  * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+* Global FV3 and Arctic MOM6+CICE6 (using `ufs.nfrac.aoflux` coupling):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/glb_atm_arc_ocn_ice`
+  * Components: FV3+MOM6+CICE6
+  * ATM grid: C96 Global
+  * OCN grid: 10km Arctic
+  * UFS Version: ufs-community/ufs-weather-model (9b9a630)
+  * Compile Flags: `-DAPP=S2S -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+* Regional Arctic FV3+MOM6+CICE6 (using default ice initial conditions):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice_no_ics/`
+  * Components: FV3+MOM6+CICE6
+  * ATM grid: Arctic C185
+  * OCN grid: 10km Arctic
+  * UFS Version: kristinbarton/ufs-weather-model (003b184)
+  * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+* Regional Arctic FV3+MOM6+CICE6 (with ice initial conditions from file):
+`/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice/`
+  * Components: FV3+MOM6+CICE6
+  * ATM grid: Arctic C185
+  * OCN grid: 10km Arctic
+  * UFS Version: kristinbarton/ufs-weather-model (003b184)
+  * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 
 Setting up initial working ATM OCN ICE configuration
 ----------------------------------------------------
