@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/stmp/stmp2/Kristin.Barton/FV3_RT/workflow_updates_23May2025/run/config_files/2020_08_25_12_3HR_CICE6"
+CONFIG_DIR="./config_files/2020_08_25_12_3HR_CICE6/"
 NAMELIST_FILE="$CONFIG_DIR/config.in"
 
 if [[ -f "$NAMELIST_FILE" ]]; then

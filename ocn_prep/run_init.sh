@@ -41,7 +41,7 @@ export APRUNS=${APRUNS:-"srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-pe
 export OCN_GRID_NAME=${OCN_GRID_NAME:-"ARC12"}
 export OCN_SCRIPT_DIR=${OCN_SCRIPT_DIR:-"$(pwd)"}
 export OCN_RUN_DIR=${OCN_RUN_DIR:-"$(pwd)"}
-export OCN_GRID_DIR=${OCN_GRID_DIR:-"/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"}
+export OCN_GRID_DIR=${OCN_GRID_DIR:-"/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"}
 
 # !!! Edit for your local dataset locations !!!
 # These can be found by checking the relevant system.conf file in the parm/ directory of the HAFS repository.
@@ -49,7 +49,7 @@ COMINrtofs=${COMINrtofs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMRTOFSv2/"
 COMINgfs=${COMINgfs:-"/scratch1/NCEPDEV/hwrf/noscrub/hafs-input/COMGFSv16/"}
 
 # !!! Edit for your HAFS directory (if needed) !!!
-HAFSdir=${HAFSdir:-"/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"}
+HAFSdir=${HAFSdir:-"/scratch4/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"}
 FIXhafs= ${FIXhafs:-"${HAFSdir}/fix/"}
 PARMhafs=${PARMhafs:-"${HAFSdir}/parm/"}
 EXEChafs=${EXEChafs:-"${HAFSdir}/exec/"}

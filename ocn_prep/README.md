@@ -8,7 +8,7 @@ It has currently been tested for 2020-08-25, single forecast cycle run.
 
 How to run
 ==========
-1. Copy MOM6 mesh files from (Hera): `/scratch2/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix` into the repositories's `fix` directory
+1. Copy MOM6 mesh files from (Hera): `/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/ocn_prep/fix` into the repositories's `fix` directory
 2. Edit the initial parameters in the `run_init.sh` file for your system/account
 3. Run: `./run_init.sh`
 

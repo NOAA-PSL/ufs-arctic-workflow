@@ -11,7 +11,7 @@ set -e
 module purge
 
 # Required modules are NCL and ESMF
-module use /scratch2/BMC/gsienkf/Kristin.Barton/ufs-weather-model/modulefiles/
+module use /scratch4/BMC/gsienkf/Kristin.Barton/ufs-weather-model/modulefiles/
 module load ufs_hera.intel
 module load ncl
 

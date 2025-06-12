@@ -10,8 +10,8 @@ export system="hera"
 SACCT="gsienkf"
 
 # Locations to retrieve datasets from
-export ATM_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
-export OCN_GRID_DIR="/scratch2/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
+export ATM_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/C96/"
+export OCN_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_GRID_NAME}/input_files"
 
 # Working directory locations
 export MAIN_DIR="$(pwd)/../" # Top level directory
@@ -22,7 +22,7 @@ export ATM_RUN_DIR="${RUN_DIR}/atm_prep/"
 export OCN_RUN_DIR="${RUN_DIR}/ocn_prep/"
 
 # Point to HAFS directory locations
-export HAFSdir="/scratch2/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"
+export HAFSdir="/scratch4/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/"
 export FIXhafs="${HAFSdir}/fix/"
 export PARMhafs="${HAFSdir}/parm/"
 export EXEChafs="${HAFSdir}/exec/"
