@@ -9,10 +9,10 @@ from scipy.sparse import coo_matrix
 ###########################
 
 class Remapper:
-    def __new__(cls, *args, depth_name = None, convert_angle=False):
+    def __new__(cls, *args, depth_name = None, src_angle = None, dst_angle = None, src_ang_hgrid = False, dst_ang_hgrid = False):
         """ Determine data type based on number of input dimensions and instantiate accordingly """
         if (len(args)<1 or len(args)>3):
-            raise ValueError("Must provide either 1 (scalar) or 2 (vector, no grid angle) or 3 (vector and grid angle) netCDF4 variables")
+            raise ValueError("Must provide either 1 (scalar) or 2 (vectore) netCDF4 variables")
 
         if not all(isinstance(var, nc.Variable) for var in args):
             raise ValueError("All positional arguments must be netCDF4 variables")
@@ -21,19 +21,20 @@ class Remapper:
 
         def check_depth_dimension(dataset):
             if depth_name is not None:
-                if depth_name not in dataset.dimensions:
-                    raise ValueError(f"Specified depth dimension '{depth_name}' not found.")
-                return len(dataset.dimensions[depth_name])
+                if depth_name not in args[0].dimensions:
+                    return 1
+                else:
+                    idx = args[0].dimensions.index(depth_name)
+                    return args[0].shape[idx]
 
-            depth_dims = {'depth', 'depths', 'z'}
-            for dim_name, dim in dataset.dimensions.items():
-                if dim_name.lower() in depth_dims:
-                    return len(dim)
+#            depth_dims = {'depth', 'depths', 'z'}
+#            for dim_name, dim in dataset.dimensions.items():
+#                if dim_name.lower() in depth_dims:
+#                    return len(dim)
 
             return 0
 
         ndepths = check_depth_dimension(dataset)
-
         if len(args) == 1:
             if ndepths>1:
                 instance = _Remapper3DScalar(args, ndepths)
@@ -41,7 +42,7 @@ class Remapper:
                 instance = _Remapper2DScalar(args)
         else:
             if ndepths>1:
-                instance = _Remapper3DVector(args, ndepths, convert_angle)
+                instance = _Remapper3DVector(args, ndepths, src_angle, dst_angle, src_ang_hgrid, dst_ang_hgrid)
             else:
                 raise ValueError("Vector interpolation only implemented for 3D data")
 
@@ -176,19 +177,18 @@ class _Remapper3DScalar(_RemapperBase):
 
 class _Remapper3DVector(_RemapperBase):
     """ Class for 3D Vector datatype (velocity) """
-    def __init__(self, args, ndepths, convert_angle):
+    def __init__(self, args, ndepths, src_angle, dst_angle, src_ang_hgrid, dst_ang_hgrid):
         self.data = (args[0], args[1])
-
-        if len(args) == 3:
-            self.angle = args[2]
-        else:
-            self.angle = None
-
         self.ndepths = ndepths
-        self.convert_angle = convert_angle
-
+        self.src_angle = src_angle
+        self.dst_angle = dst_angle
+        self.src_hgrid = src_ang_hgrid
+        self.dst_hgrid = dst_ang_hgrid
         self.remapped = None
         self.staggered = None
+
+        if (self.src_angle is not None) and (self.src_hgrid):
+            self.src_angle = self.convert_angle_to_subgrid(self.src_angle[:], 'center')
 
     def remap_from_file(self, *wgt_file):
         """ Determines whether to remap to centers or directly to edges based on whether
@@ -208,8 +208,10 @@ class _Remapper3DVector(_RemapperBase):
 
         for i in range(2): # For each edge subgrid
             sg = subgrids[i]
-            if (self.angle is not None) and (self.convert_angle): # Get angles for subgrids from supergrid
-                angle = self.convert_angle_to_subgrid(self.angle[:], sg)
+            if (self.dst_angle is not None) and (self.dst_hgrid): # Get angles for subgrids from supergrid
+                dst_angle_sg = self.convert_angle_to_subgrid(self.dst_angle[:], sg)
+            else: 
+                dst_angle_sg = None
 
             wgts = wgt_file[i]
             S_mat, dst_dims, nb = Remapper.unpack_weights(wgts)
@@ -222,21 +224,26 @@ class _Remapper3DVector(_RemapperBase):
             t = 0
 
             for d in range(self.ndepths):
+                data_src_u = np.array(self.data[0][t,d,:,:])
+                data_src_v = np.array(self.data[1][t,d,:,:])
+
+                # Rotate to N-E direction from source grid
+                if self.src_angle is not None:
+                    data_src_u, data_src_v = self.rotate_vector(data_src_u, data_src_v, self.src_angle, grid='dst')
+
                 # Interpolate u
-                data_src = np.array(self.data[0][t,d,:,:])
-                data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
+                data_level = np.where(data_src_u.ravel()==N, 0, data_src_u.ravel())
                 data_u[t,d,:] = S_mat.dot(data_level)
 
                 # Interpolate v
-                data_src = np.array(self.data[1][t,d,:,:])
-                data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
+                data_level = np.where(data_src_v.ravel()==N, 0, data_src_v.ravel())
                 data_v[t,d,:] = S_mat.dot(data_level)
 
             data_u = data_u.reshape(dims)
             data_v = data_v.reshape(dims)
 
-            if self.angle is not None: # No center angle assumes destination grid is North-East aligned
-                data_u, data_v = self.rotate_vector(data_u, data_v, angle)
+            if dst_angle_sg is not None: # No center angle assumes destination grid is North-East aligned
+                data_u, data_v = self.rotate_vector(data_u, data_v, dst_angle_sg, grid='dst')
            
             # Only keep rotated u on u grid and rotated v on v grid
             if sg == 'u':
@@ -257,57 +264,47 @@ class _Remapper3DVector(_RemapperBase):
         data_v = np.zeros((1,self.ndepths,nb))
         
         t = 0
-        
-#        for d in range(self.ndepths):
-#            print("\n\n ================ \n\n")
-#            # Interpolate u
-#            data_src = np.array(self.data[0][t,d,:,:])
-#            data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
-#            print(f"Data Level -- min: {np.min(data_level)}; max: {np.max(data_level)}")
-#            # Dynamically reshape result to match data_u[t, d, :] -- solves mysterious reshaping error
-#            result = S_mat.dot(data_level)
-#            print(f"Result-- min: {np.min(result)}; max: {np.max(result)}")
-#            target_shape = data_u[t, d, :].shape
-#            data_u[t, d, :] = result.reshape(target_shape)
-#            print(f"Data U -- min: {np.min(data_u)}; max: {np.max(data_u)}")
-#        
-#            # Interpolate v
-#            data_src = np.array(self.data[1][t,d,:,:])
-#            data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
-#            print(f"Data Level -- min: {np.min(data_level)}; max: {np.max(data_level)}")
-#            # Dynamically reshape result to match data_v[t, d, :] -- solves mysterious reshaping error
-#            result = S_mat.dot(data_level)
-#            print(f"Result-- min: {np.min(result)}; max: {np.max(result)}")
-#            target_shape = data_v[t, d, :].shape
-#            data_v[t, d, :] = result.reshape(target_shape)
-#            print(f"Data V -- min: {np.min(data_v)}; max: {np.max(data_v)}")
-#            print("\n\n ================ \n\n")
 
         for d in range(self.ndepths):
+            data_src_u = np.array(self.data[0][t,d,:,:])
+            data_src_v = np.array(self.data[1][t,d,:,:])
+
+            # Rotate to N-E direction from source grid
+            if self.src_angle is not None:
+                data_src_u, data_src_v = self.rotate_vector(data_src_u, data_src_v, self.src_angle, grid='src')
+            
             # Interpolate u
-            data_src = np.array(self.data[0][t,d,:,:])
-            data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
+            data_level = np.where(data_src_u.ravel()==N, 0, data_src_u.ravel())
             data_u[t,d,:] = S_mat.dot(data_level)
 
             # Interpolate v
-            data_src = np.array(self.data[1][t,d,:,:])
-            data_level = np.where(data_src.ravel()==N, 0, data_src.ravel())
+            data_level = np.where(data_src_v.ravel()==N, 0, data_src_v.ravel())
             data_v[t,d,:] = S_mat.dot(data_level)
 
         data_u = data_u.reshape(dims)
         data_v = data_v.reshape(dims)
 
-        if self.angle is not None: # No center angle assumes destination grid is North-East aligned
-            data_u, data_v = self.rotate_vector(data_u, data_v, self.angle)
+        if self.dst_angle is not None: # No center angle assumes destination grid is North-East aligned
+            data_u, data_v = self.rotate_vector(data_u, data_v, self.dst_angle, grid='dst')
         
         self.remapped.append(data_u)
         self.remapped.append(data_v)
 
     @staticmethod
-    def rotate_vector(u, v, a):
+    def rotate_vector(u, v, a, grid):
         """ Rotates vector from North-East alignment to grid alignment specified by the angle, a """
-        rotated_u = u*np.cos(a) + v*np.sin(a) 
-        rotated_v = v*np.cos(a) + u*np.sin(a)
+        if (np.min(a) < -1*np.pi) or (np.max(a) > np.pi):
+            a = np.radians(a)
+
+        cosa = np.cos(a)
+        sina = np.sin(a)
+
+        if grid=='dst':
+            rotated_u = u*cosa + v*sina
+            rotated_v = v*cosa - u*sina
+        elif grid=='src':
+            rotated_u = u*cosa - v*sina
+            rotated_v = v*cosa + u*sina
 
         return rotated_u, rotated_v
 

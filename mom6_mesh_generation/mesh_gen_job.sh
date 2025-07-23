@@ -11,8 +11,8 @@ set -e
 module purge
 
 # Required modules are NCL and ESMF
-module use /scratch4/BMC/gsienkf/Kristin.Barton/ufs-weather-model/modulefiles/
-module load ufs_hera.intel
+#module use /scratch4/BMC/gsienkf/Kristin.Barton/ufs-weather-model/modulefiles/
+#module load ufs_hera.intel
 module load ncl
 
 # Uncomment to run script that adds center coordinates to an ocean_mask.nc file

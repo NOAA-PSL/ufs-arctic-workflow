@@ -80,10 +80,54 @@ def initialize_file(dz, dz_name_out, times, time_name_out, out_file):
             time_var = new_ds.createVariable(time_name_out, 'f4', (time_name_out))
 
             depth_var[:] = dz
+#            time_var[:] = 737678.5 # times[:]
             time_var[:] = times[:]
-            time_var.long_name = times.long_name
-            time_var.units = times.units
-            time_var.calendar = times.calendar
+            if hasattr(times, 'long_name'):
+                time_var.long_name = times.long_name
+            else:
+                time_var.long_name = "Time"
+            if hasattr(times, 'units') and (time_var.units != "days"):
+                time_var.units = times.units
+            else:
+                time_var.units = "days since 0001-01-01 00:00:00"
+            if hasattr(times, 'calendar'):
+                time_var.calendar = times.calendar
+            else:
+                time_var.calendar = "julian"
     else:
         print(f"(Output file {out_file} already exists.)")
         print(f"(Assuming dimensions are correct -- skipping dimension creation.)")
+
+
+##########################
+###   Interpolation    ###
+##########################
+
+def interpolate_vertical(v_s, z_s, z_d):
+
+    """ Performs piecewise linear interpolation of vertical levels using numpy.interp()
+
+    Parameters:
+        z_s(k_s)     (netCDF4.variable): Source vertical levels
+        z_d(k_d)     (netCDF4.variable): Destination vertical levels
+        v_s(i,j,k_s) (netCDF4.variable): Source vertical data to interpolate
+
+    Returns:
+        v_d(i,j,k_d) (netCDF4.variable): Destination vertical interpolated data
+    """
+    ni, nj, _ = np.shape(v_s)
+    nk_s = np.size(z_s)
+    nk_d = np.size(z_d)
+
+    v_d = np.zeros([ni, nj, nk_d])
+
+    # Perform standard numpy interpolation, column by column
+    for i in range(ni):
+        for j in range(nj):
+            # `left`:  Value to return for x < xp[0], default is fp[0] (Above surface)
+            # `right`: Value to return for x > xp[-1], default is fp[-1] (Below bathymetry)
+            v_d[i,j,:] = np.interp(z_d, z_s, v_s[i,j,:], right=0)
+
+    np.interp()
+
+    return v_d

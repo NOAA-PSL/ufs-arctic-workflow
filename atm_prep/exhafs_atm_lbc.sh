@@ -6,7 +6,7 @@
 #   This script generates the atmospheric lateral boundary condition (LBC) at a
 #   specific forecast lead time through the UFS_UTIL's chgres_cube tool.
 ################################################################################
-set -x -o pipefail
+set -e -x -o pipefail
 
 cyc=${cyc:-00}
 CDATE=${CDATE:-${YMDH}}
@@ -198,6 +198,13 @@ elif [ $bctype = "gfsgrib2_1p00" ]; then
   fixed_files_dir_input_grid=""
   tracers='"sphum","liq_wat","o3mr"'
   tracers_input='"spfh","clwmr","o3mr"'
+elif [ $bctype = "gefsv13_replay"]; then
+  atm_files_input_grid=gefs.t${cyc}z.pgrb2_combined.0p25.f${FHR3}
+  sfc_files_input_grid=gefs.t${cyc}z.pgrb2_combined.0p25.f${FHR3}
+  grib2_file_input_grid=gefs.t${cyc}z.pgrb2_combined.0p25.f${FHR3}
+  input_type="grib2"
+  tracers='"sphum","liq_wat","o3mr"'
+  tracers_input='"spfh","clmr","o3mr"'
 else
   echo "FATAL ERROR: unsupportted input data type yet."
   exit 9

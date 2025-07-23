@@ -7,7 +7,7 @@
 #   boundary condition (LBC) at model intial time (if needed) through the
 #   UFS_UTIL's chgres_cube tool.
 ################################################################################
-set -x -o pipefail
+set -e -x -o pipefail
 
 nest_grids=${nest_grids:-1}
 
@@ -160,6 +160,15 @@ elif [ $ictype = "gfsgrib2_1p00" ]; then
   fixed_files_dir_input_grid=""
   tracers='"sphum","liq_wat","o3mr"'
   tracers_input='"spfh","clwmr","o3mr"'
+#elif [ $ictype = "fv3_restart" ]; then
+#  atm_files_input_grid=${CDUMP}.t${cyc}z.pgrb2.1p00.f${FHR3}
+#  sfc_files_input_grid=${CDUMP}.t${cyc}z.pgrb2.1p00.f${FHR3}
+#  grib2_file_input_grid=${CDUMP}.t${cyc}z.pgrb2.1p00.f${FHR3}
+#  input_type="grib2"
+#  varmap_file="${HOMEhafs}/parm/varmap_tables/GFSphys_var_map.txt"
+#  fixed_files_dir_input_grid=""
+#  tracers='"sphum","liq_wat","o3mr"'
+#  tracers_input='"spfh","clwmr","o3mr"'
 else
   echo "FATAL ERROR: unsupportted input data type yet."
   exit 9

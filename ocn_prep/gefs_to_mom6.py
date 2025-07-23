@@ -1,10 +1,10 @@
 """
-Script Name: rtofs_to_mom6.py
+Script Name: gefs_to_mom6.py
 Authors: Kristin Barton (kristin.barton@noaa.gov) and UFS Arctic Team
-Last Modified: 15 January 2025
+Date created: 30 June 2025
 Description:
-    This code performs the interoplation data from RTOFS input netCDF file
-    onto a MOM6 staggered grid using input ESMF Regridding weight files.
+    This code generates Arctic initial conditions based on input GEFSv13 Replay
+    MOM6 restart file.
 """
 
 import os
@@ -27,8 +27,8 @@ def main(args):
 
     # Get variable / vector information
     var_name = args.var_name
-    time_name = args.time_name
     dz_name = args.dz_name
+    time_name = args.time_name
 
     # Default to input names if not specified
     tme_file = args.tme_file or src_file[0]
@@ -40,12 +40,7 @@ def main(args):
     forecast_iter = args.forecast_iter or 0
     
     # Optional -- Only required if input is a vector and grid is not NE-aligned
-    src_ang_name = args.src_ang_name or None
-    src_ang_file = args.src_ang_file or None
-    src_ang_supergrid = args.src_ang_supergrid or False
-    dst_ang_name = args.dst_ang_name or None
-    dst_ang_file = args.dst_ang_file or None
-    dst_ang_supergrid = args.dst_ang_supergrid or False
+    convert_angle_to_center = args.convert_angle_to_center or False
 
     # Initialize output file with vertical layer and time information
     print(f"... Initializing output file ...")
@@ -59,23 +54,13 @@ def main(args):
         for src_file, var_name in zip(args.src_file, args.var_name)
     ]
 
-    # Get angles if applicable
-    if src_ang_file is not None and src_ang_name is not None:
-        src_angle = utilities.read_variable_from_file(src_ang_file, src_ang_name)
-    else:
-        src_angle = None
-    if dst_ang_file is not None and dst_ang_name is not None:
-        dst_angle = utilities.read_variable_from_file(dst_ang_file, dst_ang_name)
-    else:
-        dst_angle = None
+    # Perform vertical interpolation
+    print(f"... Performing vertical sampling")
 
-    print(src_angle)
-    print(dst_angle)
 
     # Perform horizontal interpolation
     print(f"... Interpolating ...")
-    var_remapper = Remapper(*variables, depth_name = 'Layer', src_angle=src_angle, dst_angle=dst_angle, 
-                            src_ang_hgrid=src_ang_supergrid, dst_ang_hgrid=dst_ang_supergrid)
+    var_remapper = Remapper(*variables, convert_angle = convert_angle_to_center)
     var_remapper.remap_from_file(*wgt_file)
 
     # Append to file
@@ -86,7 +71,7 @@ def main(args):
 
 
 if __name__=="__main__":
-    parser = argparse.ArgumentParser(description="Convert RTOFS to MOM6 Initial Conditions")
+    parser = argparse.ArgumentParser(description="Convert GEFS to MOM6 Initial Conditions")
 
     # Required Arguments
     parser.add_argument("--var_name", 
@@ -94,11 +79,12 @@ if __name__=="__main__":
                         required=True, 
                         help=f"Space-seperated list of variables. "
                              f"Scalar: only include one variable name (e.g., --var_name ssh). "
-                             f"Vector: include u- and v- components (e.g., --var_name u v).")
+                             f"Vector: include u- and v- components (and grid angle name) "
+                             f"(e.g., --var_name u v or --var_name u v angle_dx).")
     parser.add_argument("--wgt_file",
                         nargs='+',
                         required=True, 
-                        help=f"Name of netCDF file containing RTOFS to MOM6 weights file from ESMF_RegridWeightGen. "
+                        help=f"Name of netCDF file containing GEFS to MOM6 weights file from ESMF_RegridWeightGen. "
                              f"Can accept one or two arguments (for u- and v- vector compenents, respectively)."
                              f"(e.g., `--wgt_file u_grid.nc v_grid.nc`)")
     parser.add_argument("--vrt_file", 
@@ -122,37 +108,20 @@ if __name__=="__main__":
                         required=True, 
                         help=f"Name of output netCDF file")
     parser.add_argument("--dz_name", 
-                        required=True,
+                        required=True, 
                         help=f"Name of layer thickness (dz) variable in `vrt_file`")
+    parser.add_argument("--dz_src",
+                        required=False,
+                        help=f"Name of source layer interface variable.")
     parser.add_argument("--time_name", 
                         required=True, 
                         help=f"Name of output time variable in `src_file`")
 
     # Optional Arguments
-    parser.add_argument("--src_ang_name",
+    parser.add_argument("--convert_angle_to_center",
                         required=False,
-                        help=f"Name of source grid angles"
-                             f"e.g., --ang_name src_ang")
-    parser.add_argument("--src_ang_file",
-                        required=False,
-                        help=f"Name of file containing source grid angles"
-                             f"e.g., --ang_file src_file")
-    parser.add_argument("--src_ang_supergrid",
-                        required=False,
-                        help=f"Specify as True if the source grid angle is specified on a "
-                             f"supergrid and needs to be converted to center points.")
-    parser.add_argument("--dst_ang_name",
-                        required=False,
-                        help=f"Name of destination grid angles"
-                             f"e.g., --ang_name dst_ang")
-    parser.add_argument("--dst_ang_file",
-                        required=False,
-                        help=f"Name of file containing destination grid angles"
-                             f"e.g., --ang_file dst_file")
-    parser.add_argument("--dst_ang_supergrid",
-                        required=False,
-                        help=f"Specify as True if the destination grid angle is specified on a "
-                             f"supergrid and needs to be converted to center points.")
+                        help=f"Specify as True if the grid angle is specified on a supergrid "
+                             f"and needs to be converted to center points.")
     parser.add_argument("--var_name_out", 
                         nargs='+',
                         required=False, 

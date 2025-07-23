@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -x -o pipefail
+
 yyyy=${CDATE:0:4}
 mm=${CDATE:4:2}
 dd=${CDATE:6:2}
