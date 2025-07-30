@@ -22,7 +22,10 @@ H_WGT_FILE_PATH="${INPUT_DIR}${H_WGT_FILE:-"rtofs2arctic_h.nc"}"
 U_WGT_FILE_PATH="${INPUT_DIR}${U_WGT_FILE:-"rtofs2arctic_u.nc"}"
 V_WGT_FILE_PATH="${INPUT_DIR}${V_WGT_FILE:-"rtofs2arctic_v.nc"}"
 
-SSH_VARNAME=${SSH_VARNAME:-"ssh"}
+THK_VARNAME=${THK_VARNAME:-"h"}
+THK_SRC_FILE_PATH="${INPUT_DIR}${THK_SRC_FILE:-"rtofs_global_ssh_ic.nc"}"
+
+SSH_VARNAME=${SSH_VARNAME:-"h"}
 SSH_SRC_FILE_PATH="${INPUT_DIR}${SSH_SRC_FILE:-"rtofs_global_ssh_ic.nc"}"
 
 TMP_VARNAME=${TMP_VARNAME:-"pot_temp"}
@@ -92,7 +95,17 @@ ${APRUNS} python rtofs_to_mom6.py \
     --time_name ${TIME_VARNAME}
 echo ""
 
-echo "Calling remapping script for SSH Variable"
+echo "Calling remapping script for SSH (or Thickness) Variable"
+${APRUNS} python rtofs_to_mom6.py \
+    --var_name ${THK_VARNAME} \
+    --src_file ${THK_SRC_FILE_PATH} \
+    --wgt_file ${H_WGT_FILE_PATH} \
+    --vrt_file ${DST_VRT_FILE_PATH} \
+    --out_file ${OUT_FILE_PATH} \
+    --dz_name ${DST_VRT_NAME} \
+    --time_name ${TIME_VARNAME}
+
+echo "Calling remapping script for SSH (or Thickness) Variable"
 ${APRUNS} python rtofs_to_mom6.py \
     --var_name ${SSH_VARNAME} \
     --src_file ${SSH_SRC_FILE_PATH} \

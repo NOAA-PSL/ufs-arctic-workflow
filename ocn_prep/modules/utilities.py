@@ -86,7 +86,7 @@ def initialize_file(dz, dz_name_out, times, time_name_out, out_file):
                 time_var.long_name = times.long_name
             else:
                 time_var.long_name = "Time"
-            if hasattr(times, 'units') and (time_var.units != "days"):
+            if hasattr(times, 'units') and (times.units != "days"):
                 time_var.units = times.units
             else:
                 time_var.units = "days since 0001-01-01 00:00:00"

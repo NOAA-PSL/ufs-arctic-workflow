@@ -115,7 +115,8 @@ ${NLN} ${OCN_SCRIPT_DIR}/inputs/* ${OCN_RUN_DIR}/inputs/.
 
 if [ $OCNINTYPE == 'gefs' ]; then
     WGTFILENAME='gefs2arctic'
-    ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP.nc"
+    ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP_masked.nc"
+    BCFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP.nc"
     METHOD="neareststod"
     ${NLN} ${OCN_SRC_DIR}/*.nc ${OCN_RUN_DIR}/inputs/.
 fi
@@ -281,7 +282,7 @@ for i in $(seq -f "%03g" 1 4); do
     FILE="${WGTFILENAME}_${i}.nc"
     if [ ! -e "${OCN_RUN_DIR}/inputs/${FILE}" ]; then
         echo "File ${FILE} does not exist. Creating the file..."
-        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_${i}.nc -w ${FILE} \
+        ${APRUNS} ESMF_RegridWeightGen -s ${BCFILENAME} -d ocean_hgrid_${i}.nc -w ${FILE} \
             --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
     fi
 done

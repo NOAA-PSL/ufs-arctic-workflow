@@ -180,7 +180,7 @@ for i in $(seq -f "%03g" $start $end); do
     ncrename -O -d ${DST_VRT_NAME},nz_segment_${i} -d yh,ny_segment_${i} -d xh,nx_segment_${i} -v ${SSH_VARNAME},ssh_segment_${i} -v ${TMP_VARNAME},temp_segment_${i} -v ${SAL_VARNAME},salinity_segment_${i} -v ${U_VARNAME},u_segment_${i} -v ${V_VARNAME},v_segment_${i} ${OBC_PATH}
 #    ncrename -O -d dz,nz_segment_${i} -d yh,ny_segment_${i} -d xh,nx_segment_${i} -v ssh,ssh_segment_${i} ${OBC_PATH}
 
-    ncap2 -O -s "ssh_segment_${i}[${TIME_VARNAME_OUT},nz_segment_${i},ny_segment_${i},nx_segment_${i}] = ssh_segment_${i}(:,:,:);" ${OBC_PATH} ${OBC_PATH}
+#    ncap2 -O -s "ssh_segment_${i}[${TIME_VARNAME_OUT},ny_segment_${i},nx_segment_${i}] = ssh_segment_${i}(:,:,:);" ${OBC_PATH} ${OBC_PATH}
 
     ncap2 -O -s "dz_u_segment_${i}[${TIME_VARNAME_OUT},nz_segment_${i},ny_segment_${i},nx_segment_${i}]=${DST_VRT_NAME}(:)" ${OBC_PATH} ${OBC_PATH}
     ncap2 -O -s "dz_v_segment_${i}[${TIME_VARNAME_OUT},nz_segment_${i},ny_segment_${i},nx_segment_${i}]=${DST_VRT_NAME}(:)" ${OBC_PATH} ${OBC_PATH} 
