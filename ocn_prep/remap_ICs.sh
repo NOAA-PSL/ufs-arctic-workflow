@@ -18,9 +18,9 @@ OUTPUT_DIR=${OCN_RUN_DIR}/intercom/
 
 OUT_FILE_PATH="${OUTPUT_DIR}${OUT_FILE:-"mom6_IC.nc"}"
 
-H_WGT_FILE_PATH="${INPUT_DIR}${H_WGT_FILE:-"rtofs2arctic_h.nc"}"
-U_WGT_FILE_PATH="${INPUT_DIR}${U_WGT_FILE:-"rtofs2arctic_u.nc"}"
-V_WGT_FILE_PATH="${INPUT_DIR}${V_WGT_FILE:-"rtofs2arctic_v.nc"}"
+H_WGT_FILE_PATH="${INPUT_DIR}${WGT_FILE_BASE:-"gefs2arctic"}_h.nc"
+U_WGT_FILE_PATH="${INPUT_DIR}${WGT_FILE_BASE:-"gefs2arctic"}_u.nc"
+V_WGT_FILE_PATH="${INPUT_DIR}${WGT_FILE_BASE:-"gefs2arctic"}_v.nc"
 
 THK_VARNAME=${THK_VARNAME:-"h"}
 THK_SRC_FILE_PATH="${INPUT_DIR}${THK_SRC_FILE:-"rtofs_global_ssh_ic.nc"}"

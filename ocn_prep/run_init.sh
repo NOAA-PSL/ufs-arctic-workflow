@@ -114,10 +114,11 @@ ${NLN} ${OCN_SRC_GRID_DIR}/* ${OCN_RUN_DIR}/inputs/.
 ${NLN} ${OCN_SCRIPT_DIR}/inputs/* ${OCN_RUN_DIR}/inputs/.
 
 if [ $OCNINTYPE == 'gefs' ]; then
-    WGTFILENAME='gefs2arctic'
+    export WGT_FILE_BASE=${WGT_FILE_BASE:-'gefs2arctic'}
     ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP_masked.nc"
     BCFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP.nc"
-    METHOD="neareststod"
+    #METHOD="neareststod"
+    METHOD="bilinear"
     ${NLN} ${OCN_SRC_DIR}/*.nc ${OCN_RUN_DIR}/inputs/.
 fi
 
@@ -167,7 +168,7 @@ if [ $OCNINTYPE == 'rtofs' ]; then
     ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x < ./rtofs_global_3d_ic.in 2>&1 | tee archv2ncdf3z_3d_ic.log
     ${APRUNS} ${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x < ./rtofs_global_ssh_ic.in 2>&1 | tee ./archv2ncdf2d_ssh_ic.log
 
-    WGTFILENAME='rtofs2arctic'
+    WGT_FILE_BASE='rtofs2arctic'
     ICFILENAME="${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc"
     METHOD="bilinear"
 
@@ -182,17 +183,17 @@ if [ ! -e "${OCN_RUN_DIR}/inputs/ocean_subgrid_v.nc" ] && [ ! -e "${OCN_RUN_DIR}
     python ${OCN_SCRIPT_DIR}/utils/make_subgrids.py --lat y --lon x --fin ocean_hgrid.nc --out ocean_subgrid
 fi
 
-if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_h.nc" ]; then
-    echo "File ${WGTFILENAME}_h.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_mask.nc -w ${WGTFILENAME}_h.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_h.nc" ]; then
+    echo "File ${WGT_FILE_BASE}_h.nc  does not exist. Creating the file..."
+    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_mask.nc -w ${WGT_FILE_BASE}_h.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate 
 fi
-if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_v.nc" ]; then
-    echo "File ${WGTFILENAME}_v.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_subgrid_v.nc -w ${WGTFILENAME}_v.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_v.nc" ]; then
+    echo "File ${WGT_FILE_BASE}_v.nc  does not exist. Creating the file..."
+    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_subgrid_v.nc -w ${WGT_FILE_BASE}_v.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
-if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_u.nc" ]; then
-    echo "File ${WGTFILENAME}_u.nc  does not exist. Creating the file..."
-    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_subgrid_u.nc -w ${WGTFILENAME}_u.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_u.nc" ]; then
+    echo "File ${WGT_FILE_BASE}_u.nc  does not exist. Creating the file..."
+    ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_subgrid_u.nc -w ${WGT_FILE_BASE}_u.nc -m ${METHOD} --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
 fi
 
 cd ${OCN_RUN_DIR}/inputs/
@@ -200,7 +201,7 @@ cd ${OCN_RUN_DIR}/inputs/
 cd ${OCN_SCRIPT_DIR}
 ./remap_ICs.sh
 
-
+exit 0
 # ----------------------------------------------------------------------------------- #
 #                                   OBC Setup                                         #
 # ----------------------------------------------------------------------------------- #
@@ -225,21 +226,21 @@ if [ $OCNINTYPE == 'rtofs' ]; then
     #echo "Hour:"
     #echo $HH
     
-    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_001.nc" ]; then
-        echo "File ${WGTFILENAME}.nc  does not exist. Creating the file..."
-        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_001.nc -w ${WGTFILENAME}_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_001.nc" ]; then
+        echo "File ${WGT_FILE_BASE}.nc  does not exist. Creating the file..."
+        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_001.nc -w ${WGT_FILE_BASE}_001.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
     fi
-    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_002.nc" ]; then
-        echo "File ${WGTFILENAME}_002.nc  does not exist. Creating the file..."
-        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_002.nc -w ${WGTFILENAME}_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_002.nc" ]; then
+        echo "File ${WGT_FILE_BASE}_002.nc  does not exist. Creating the file..."
+        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_002.nc -w ${WGT_FILE_BASE}_002.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
     fi
-    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_003.nc" ]; then
-        echo "File ${WGTFILENAME}_003.nc  does not exist. Creating the file..."
-        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_003.nc -w ${WGTFILENAME}_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_003.nc" ]; then
+        echo "File ${WGT_FILE_BASE}_003.nc  does not exist. Creating the file..."
+        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_003.nc -w ${WGT_FILE_BASE}_003.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
     fi
-    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGTFILENAME}_004.nc" ]; then
-        echo "File ${WGTFILENAME}_004.nc  does not exist. Creating the file..."
-        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_004.nc -w ${WGTFILENAME}_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
+    if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_004.nc" ]; then
+        echo "File ${WGT_FILE_BASE}_004.nc  does not exist. Creating the file..."
+        ${APRUNS} ESMF_RegridWeightGen -s ${ICFILENAME} -d ocean_hgrid_004.nc -w ${WGT_FILE_BASE}_004.nc --dst_loc center --netCDF4 --dst_regional --ignore_degenerate
     fi
     
     if [ -e ${COMINrtofs}/rtofs.$NEWymd/rtofs_glo.t00z.${type}${HH}.archv.a ]; then
@@ -279,7 +280,7 @@ if [ $OCNINTYPE == 'rtofs' ]; then
 fi
 
 for i in $(seq -f "%03g" 1 4); do
-    FILE="${WGTFILENAME}_${i}.nc"
+    FILE="${WGT_FILE_BASE}_${i}.nc"
     if [ ! -e "${OCN_RUN_DIR}/inputs/${FILE}" ]; then
         echo "File ${FILE} does not exist. Creating the file..."
         ${APRUNS} ESMF_RegridWeightGen -s ${BCFILENAME} -d ocean_hgrid_${i}.nc -w ${FILE} \
