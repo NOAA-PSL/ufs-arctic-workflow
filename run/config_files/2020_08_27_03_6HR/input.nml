@@ -25,10 +25,10 @@
 /
 
  &fv_core_nml
-       layout = 9,10
+       layout = 9,5
        io_layout = 1,1
-       npx = 89
-       npy = 89
+       npx = 156
+       npy = 126
        ntiles   = 1
        npz    = 64
        !grid_type = -1
@@ -130,6 +130,7 @@
 /
 
  &gfs_physics_nml
+       frac_grid = .false.
        fhzero         = 3.
        ldiag3d        = .false.
        lradar         = .true.
@@ -142,7 +143,7 @@
        ltaerosol    = .false.
        lradar       = .true.
        ttendlim     = -999
-       dt_inner     = 360
+       dt_inner     = 180
        sedi_semi    = .true.
        decfl        = 10
        ext_diag_thompson = .false.

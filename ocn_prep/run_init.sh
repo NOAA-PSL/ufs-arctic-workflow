@@ -117,8 +117,8 @@ if [ $OCNINTYPE == 'gefs' ]; then
     export WGT_FILE_BASE=${WGT_FILE_BASE:-'gefs2arctic'}
     ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP_masked.nc"
     BCFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP.nc"
-    #METHOD="neareststod"
-    METHOD="bilinear"
+    METHOD="neareststod"
+    #METHOD="bilinear"
     ${NLN} ${OCN_SRC_DIR}/*.nc ${OCN_RUN_DIR}/inputs/.
 fi
 
@@ -201,7 +201,6 @@ cd ${OCN_RUN_DIR}/inputs/
 cd ${OCN_SCRIPT_DIR}
 ./remap_ICs.sh
 
-exit 0
 # ----------------------------------------------------------------------------------- #
 #                                   OBC Setup                                         #
 # ----------------------------------------------------------------------------------- #

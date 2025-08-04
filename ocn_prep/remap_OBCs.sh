@@ -23,7 +23,7 @@ INPUT_DIR=${OCN_RUN_DIR}/inputs/
 OUTPUT_DIR=${OCN_RUN_DIR}/intercom/
 
 OUT_FILE_PATH_BASE=${OUTPUT_DIR}${OUT_FILE_BASE:-"mom6_OBC_"}
-WGT_FILE_PATH_BASE=${INPUT_DIR}${WGT_FILE_BASE:-"gefs2arctic_"}
+WGT_FILE_PATH_BASE=${INPUT_DIR}${WGT_FILE_BASE:-"gefs2arctic"}
 DST_ANG_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
 HGD_FILE_PATH_BASE=${INPUT_DIR}${ANGLE_FILE_PATH_BASE:-"ocean_hgrid_"}
 FILE_TAIL=${FILE_TAIL:-".nc"}
@@ -78,7 +78,7 @@ end=4
 echo "Calling remapping script for U-V vectors"
 for i in $(seq -f "%03g" $start $end); do
     echo "Interpolating ${i}"
-    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}${i}${FILE_TAIL}"
+    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}_${i}${FILE_TAIL}"
     OUT_FILE_PATH="${OUT_FILE_PATH_BASE}${i}${FILE_TAIL}"
     DST_ANG_FILE_PATH="${DST_ANG_FILE_PATH_BASE}${i}${FILE_TAIL}"
     ${APRUNS} python rtofs_to_mom6.py \
@@ -106,7 +106,7 @@ echo ""
 echo "Calling remapping script for Temperature Variable"
 for i in $(seq -f "%03g" $start $end); do
     echo "Interpolating ${i}"
-    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}${i}${FILE_TAIL}"
+    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}_${i}${FILE_TAIL}"
     OUT_FILE_PATH="${OUT_FILE_PATH_BASE}${i}${FILE_TAIL}"
     ${APRUNS} python rtofs_to_mom6.py \
         --var_name ${TMP_VARNAME} \
@@ -127,7 +127,7 @@ echo ""
 echo "Calling remapping script for Salinity Variable"
 for i in $(seq -f "%03g" $start $end); do
     echo "Interpolating ${i}"
-    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}${i}${FILE_TAIL}"
+    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}_${i}${FILE_TAIL}"
     OUT_FILE_PATH="${OUT_FILE_PATH_BASE}${i}${FILE_TAIL}"
     ${APRUNS} python rtofs_to_mom6.py \
         --var_name ${SAL_VARNAME} \
@@ -148,7 +148,7 @@ echo ""
 echo "Calling remapping script for SSH Variable"
 for i in $(seq -f "%03g" $start $end); do
     echo "Interpolating ${i}"
-    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}${i}${FILE_TAIL}"
+    WGT_FILE_PATH="${WGT_FILE_PATH_BASE}_${i}${FILE_TAIL}"
     OUT_FILE_PATH="${OUT_FILE_PATH_BASE}${i}${FILE_TAIL}"
 
     ${APRUNS} python rtofs_to_mom6.py \

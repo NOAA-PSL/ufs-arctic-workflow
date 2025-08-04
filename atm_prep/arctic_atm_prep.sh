@@ -2,10 +2,11 @@
 
 set -e -x -o pipefail
 
-module use ${UFSUTILS_DIR}/modulefiles
-module load build.${SYSTEM}.intel.lua
-#CHGRESCUBEEXEC=${CHGRESCUBEEXEC:-${UFSUTILS_DIR}/exec/chgres_cube}
-CHGRESCUBEEXEC="/scratch4/BMC/gsienkf/Kristin.Barton/hwrf/HAFS/exec/hafs_utils_chgres_cube.x"
+if [[ -n "$HAFSUTILS_DIR" ]]; then
+    CHGRESCUBEEXEC=${CHGRESCUBEEXEC:-${HAFSUTILS_DIR}/exec/hafs_utils_chgres_cube.x}
+else
+    CHGRESCUBEEXEC=${CHGRESCUBEEXEC:-${UFSUTILS_DIR}/exec/chgres_cube}
+fi
 
 CDATE=${CDATE}
 cycle_year=$(echo $CDATE | cut -c 1-4)
@@ -60,8 +61,6 @@ elif [ $ATM_ICTYPE = "gefsv13_replay" ]; then
     data_dir_input_grid="${ATM_DATA_DIR}/fcst/atmos/combined"
     atm_core_files_input_grid="NULL"
     atm_tracer_files_input_grid="NULL"
-    #varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    varmap_file="/scratch4/BMC/gsienkf/Kristin.Barton/repos/hafs-community/HAFS/parm/varmap_tables/GFSphys_var_map.txt"
     convert_nst=.true.
     input_type="grib2"
     tracers='"sphum","liq_wat","o3mr"'
@@ -70,6 +69,11 @@ elif [ $ATM_ICTYPE = "gefsv13_replay" ]; then
     grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
     atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
     sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+    if [[ -n "$HAFSUTILS_DIR" ]]; then
+        varmap_file="${HAFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+    else
+        varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+    fi
 #elif [ $ATM_ICTYPE = "gfsnetcdf" ]; then
 else
     echo "FATAL ERROR: Unknown or unsupported IC input type ${ATM_ICTYPE}"
@@ -151,11 +155,15 @@ if [ $ATM_BCTYPE = "gefsv13_replay" ]; then
     atm_core_files_input_grid="NULL"
     atm_tracer_files_input_grid="NULL"
     sfc_files_input_grid="NULL"
-    varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    convert_nst=.false.
+    convert_nst=.true.
     input_type="grib2"
     tracers="sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"
     tracers_input="spfh","clmr","o3mr","icmr","rwmr","snmr","grle"
+    if [[ -n "$HAFSUTILS_DIR" ]]; then
+        varmap_file="${HAFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+    else
+        varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+    fi
 #elif [ $ATM_ICTYPE = "gfsnetcdf" ]; then
 else
     echo "FATAL ERROR: Unknown or unsupported LBC input type ${ATM_BCTYPE}"
