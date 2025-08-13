@@ -13,6 +13,9 @@
 
 set -e -x -o pipefail
 
+module use /contrib/spack-stack/spack-stack-1.9.2/envs/ue-oneapi-2024.2.1/install/modulefiles/Core
+module load stack-oneapi
+
 # ----------------------------------------------------------------------------------- #
 #                                  Environment Setup                                  #
 # ----------------------------------------------------------------------------------- #

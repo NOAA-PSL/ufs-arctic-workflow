@@ -1,0 +1,51 @@
+start_year:              2020
+start_month:             08
+start_day:               27
+start_hour:              03
+start_minute:            0
+start_second:            0
+nhours_fcst:             240
+dt_atmos:                180
+restart_interval:        0
+
+quilting:                .true.
+quilting_restart:        .true.
+write_groups:            1
+write_tasks_per_group:   75
+num_files:               2
+filename_base:           'atm' 'sfc'
+output_file:             'netcdf' 'netcdf'
+write_dopost:            .false.
+ichunk2d:                -1
+jchunk2d:                -1
+ichunk3d:                -1
+jchunk3d:                -1
+kchunk3d:                -1
+ideflate:                1
+quantize_mode:           'quantize_bitround'
+quantize_nsd:            0
+
+output_grid:             gaussian_grid # gaussian_grid, global_latlon, regional_latlon[_moving], rotated_latlon[_moving], lambert_conformal, cubed_sphere_grid
+imo:                     155 # number of grid points along longitude/latitude direction
+jmo:                     125            # needed for gaussian_grid, global_latlon, regional_latlon_moving, or rotated_latlon_moving
+#cen_lon:                 0.0         # central longitude/latitude (degrees)
+#cen_lat:                 90.0         # needed for rotated_latlon, lambert_conformal
+#lon1:                    0.0            # longitude/latitude of lower-left corner
+#lat1:                    -40.00            # needed for regional_latlon, rotated_latlon, lambert_conformal
+#lon2:                    360.0            # longitude/latitude of upper-right corner
+#lat2:                    40.00            # needed for regional_latlon, rotated_latlon
+#dlon:                    0.25            # grid spacing in longitude/latitude direction (degrees)
+#dlat:                    0.25            # needed for regional_latlon[_moving], rotated_latlon[_moving]
+#stdlat1:                          # latitude of first/second standard parallel (degrees)
+#stdlat2:                          # needed for lambert_conformal
+#nx:                                    # number of grid cells along x/y-axis
+#ny:                                    # needed for lambert_conformal
+#dx:                                    # grid cell size in x/y direction (meters)
+#dy:                                    # needed for lambert_conformal
+
+
+output_fh:               3 -1       # Output forecast hours controlled by output_fh (see notes below)
+# a) An array of output_fh means to output history files at those forecast time (e.g., "output_fh: 0 1 2 3 12 24 48")
+#    If the first elelment is zero, it means the first time step output
+# b) If there are two elements in output_fh and the second one is -1, then the first element is output frequency. e.g.
+#    For example, "output_fh: 6 -1" will output the history file every 6 hours.

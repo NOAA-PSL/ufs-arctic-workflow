@@ -8,7 +8,7 @@ export OCN_DST_GRID_NAME="ARC12"
 export system="hera"
 
 # Set account for srun commands
-SACCT="gsienkf"
+export SACCT="gsienkf"
 
 # Locations to retrieve datasets from
 export ATM_CASE="C185"
@@ -21,12 +21,13 @@ export OCN_DST_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/$
 export WGT_FILE_BASE="gefs2arctic"
 
 export ICE_SRC_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_SRC_GRID_NAME}/"
-export ICE_DST_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/CICE6/"
+#export ICE_DST_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/CICE6/"
+export ICE_DST_GRID_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/mesh_files/${OCN_DST_GRID_NAME}/input_files/"
 
 export ATM_IC_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/GEFSv13-reforecasts/2020082700/ics/"
 export ATM_LBC_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/GEFSv13-reforecasts/2020082700/fcst/atmos"
 export OCN_SRC_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/GEFSv13-reforecasts/2020082700/ics/"
-export ICE_SRC_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/GEFSv13-reforecasts/2020082700/ics/"
+export ICE_INPUT_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/input_data/GEFSv13-reforecasts/2020082700/ics/"
 
 # Working directory locations
 export MAIN_DIR="$(pwd)/../" # Top level directory
@@ -85,7 +86,7 @@ export SRC_ANG_FILE="mx025.ocean_hgrid.nc"
 export SRC_CONVERT_ANG="True"
 
 export DST_ANG_NAME="angle_dx"
-export DST_ANG_FILE="ARC12.ocean_hgrid.nc"
+export DST_ANG_FILE="ocean_hgrid.nc"
 export DST_CONVERT_ANG="True"
 
 export SRC_VRT_FILE="mx025.ocean_vgrid.nc"
@@ -98,6 +99,10 @@ export DST_VRT_FILE="MOM.res.nc"
 export DST_VRT_NAME="Layer"
 
 export TIME_VARNAME="Time"
+
+export ICE_SRC_FILE="Ct.mx025_SCRIP_masked.nc"
+export ICE_DST_FILE="ocean_mask.nc"
+export ICE_WGT_FILE="${OCNINTYPE}2arctic_h.nc"
 
 # Atmosphere Parameters-- Used by HAFS scripts
 export CDATE=2020082700
@@ -112,7 +117,7 @@ export NATMBDYHRS=24
 export BC_GROUPI=1
 export BC_GROUPN=1
 export gtype=regional
-export ictype=fv3_restart
+export ictype=gefsv13_replay
 export bctype=gefsv13_replay
 
 
@@ -151,14 +156,15 @@ export NHRS=6 # Total number of forecast hours
 export ATM_NBDYINT=3 # Boundary input interval in hours
 
 SACCT="gsienkf"
-export APRUNC="srun --ntasks=6 --nodes=1 --ntasks-per-node=6 --cpus-per-task=1 --account=${SACCT}"
+export APRUNC="srun --ntasks=6 --nodes=2 --ntasks-per-node=3 --cpus-per-task=2 --account=${SACCT}"
 export NLN="ln -s"
 
-export HAFSUTILS_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/hwrf/HAFS"
-export CHGRES_EXEC="hafs_utils_chgres_cube.x"
-export SYSTEM="hera"
+export CHGRES_EXEC="chgres_cube"
+export SYSTEM="ursa"
 if [ $SYSTEM = "hera" ]; then
     export UFSUTILS_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/files/envs/UFS_UTILS"
-else
-    export UFSUTILS_DIR="/scratch3/NCEPDEV/nems/role.ufsutils/ufs_utils/UFS_UTILS"
+elif [ $SYSTEM = "ursa" ]; then
+    export UFSUTILS_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/repos/hafs-community/UFS_UTILS"
+    #export UFSUTILS_DIR="/scratch4/BMC/gsienkf/Kristin.Barton/repos/ufs-community/UFS_UTILS"
 fi
+

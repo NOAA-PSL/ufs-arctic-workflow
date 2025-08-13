@@ -2,11 +2,16 @@
 
 set -e -x -o pipefail
 
+module use ${UFSUTILS_DIR}/modulefiles
+module load build.${SYSTEM}.intelllvm.lua
+
 if [[ -n "$HAFSUTILS_DIR" ]]; then
     CHGRESCUBEEXEC=${CHGRESCUBEEXEC:-${HAFSUTILS_DIR}/exec/hafs_utils_chgres_cube.x}
 else
     CHGRESCUBEEXEC=${CHGRESCUBEEXEC:-${UFSUTILS_DIR}/exec/chgres_cube}
 fi
+
+echo $CHGRESCUBEEXEC
 
 CDATE=${CDATE}
 cycle_year=$(echo $CDATE | cut -c 1-4)
@@ -63,8 +68,10 @@ elif [ $ATM_ICTYPE = "gefsv13_replay" ]; then
     atm_tracer_files_input_grid="NULL"
     convert_nst=.true.
     input_type="grib2"
-    tracers='"sphum","liq_wat","o3mr"'
-    tracers_input='"spfh","clwmr","o3mr"'
+    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+    tracers_input='"spfh","clwmr","o3mr","ice_wat","rainwat","snowwat","graupel"'
+#    tracers='"sphum","liq_wat","o3mr"'
+#    tracers_input='"spfh","clwmr","o3mr"'
     #grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
     grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
     atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
@@ -179,8 +186,8 @@ grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
 # Create namelist and run chgres_cube
 cat>./fort.41<<EOF
  &config
-  mosaic_file_target_grid="${mosaic_file_target_grid:-NULL}"
   fix_dir_target_grid="${fix_dir_target_grid:-NULL}"
+  mosaic_file_target_grid="${mosaic_file_target_grid:-NULL}"
   orog_dir_target_grid="${orog_dir_target_grid:-NULL}"
   orog_files_target_grid="${orog_files_target_grid:-NULL}"
   vcoord_file_target_grid="${vcoord_file_target_grid:-NULL}"

@@ -1,35 +1,17 @@
 import argparse
 import xarray as xr
 import numpy as np
-#from matplotlib import pyplot as plt
-import xesmf as xe
+from scipy.sparse import coo_matrix
 import os
 
 def main(args):
 
-    cdate = args.cdate
-    outdir = args.outdir
-    src_grid = args.src_grid
-    src_data = args.src_data
-    dst_grid = args.dst_grid
-    dst_mask = args.dst_mask
-    if args.wfile:
-        wfile = args.wfile
-    else:
-        wfile = args.outdir+'/replay_ice_to_arctic_grid_weights.nc'
-    
-    # rename lat and lons from grid files for ESMF interpolation
-    grid_in=xr.open_dataset(src_grid)
-    grid_out=xr.open_dataset(dst_grid)
-    grid_in=grid_in.rename({'lonCt': 'lon', 'latCt': 'lat'})
-    grid_out=grid_out.rename({'x': 'lon', 'y': 'lat'})
-
-    output_file = outdir+'replay_ice.arctic_grid.%s.nc' %cdate
-   
-    if args.wfile:
-        rg_tt = xe.Regridder(grid_in, grid_out, 'nearest_s2d', periodic=True,reuse_weights=True, filename=wfile)
-    else:
-        rg_tt = xe.Regridder(grid_in, grid_out, 'nearest_s2d', periodic=True,reuse_weights=False, filename=wfile)
+    wgt_file = args.wgt_file
+    src_file = args.src_file
+    src_angl = args.src_angl
+    msk_file = args.msk_file
+    dst_angl = args.dst_angl
+    out_file = args.out_file
 
     #define some constants
     saltmax = 3.20
@@ -48,12 +30,24 @@ def main(args):
         zn = (l+1-0.5)/float(nilyr)
         salinz[l] = (saltmax/2.0)*(1.0-np.cos(np.pi*zn**(nsal/(msal+zn))))
     Tmltz = salinz / (-18.48 + (0.01848*salinz))
-    
-    
+
     # remove variables we don't need
-    ds_in = xr.open_dataset(src_data) 
+    ds_in = xr.open_dataset(src_file) 
     ds_in=ds_in.drop(['fsnow','iage','alvl','vlvl','apnd','hpnd','ipnd','dhs','ffrac'])
-    ds_out=rg_tt(ds_in)
+
+    # rotate source vectors to N-S
+    ang_ds = xr.open_dataset(src_angl)
+    angle = get_centers(ang_ds['angle_dx'])
+    ds_in['uvel'][:], ds_in['vvel'][:] = rotate(ds_in['uvel'][:], ds_in['vvel'][:], angle, 'grid2NS')
+
+    # Remap variables
+    ds_out = remap(ds_in, wgt_file)
+
+    # rotated destination vectors to grid
+    ang_ds = xr.open_dataset(dst_angl)
+    angle = get_centers(ang_ds['angle_dx'])
+    ds_out['uvel'][:], ds_out['vvel'][:] = rotate(ds_out['uvel'][:], ds_out['vvel'][:], angle, 'NS2grid')
+
     ds_out['coszen'][:]=0
     ds_out['scale_factor'][:]=0
     ds_out['strocnxT'][:]=0
@@ -94,8 +88,8 @@ def main(args):
     
     
     # Read in mask and set aicen to zero over land
-    ds_kmt = xr.open_dataset(dst_mask)
-    kmt = np.asarray(ds_kmt.kmt.values, dtype=float)
+    ds_kmt = xr.open_dataset(msk_file)
+    kmt = np.asarray(ds_kmt['mask'].values, dtype=float)
     ds_out['aicen']=xr.where(kmt==1, ds_out['aicen'],0)
     
     # zero out small ice fractions
@@ -149,17 +143,83 @@ def main(args):
     old_mask=ds_out['iceumask'][:].values
     ds_out['iceumask'][:] = new_mask
     
-    ds_out.to_netcdf(output_file,unlimited_dims='Time')
+    ds_out.to_netcdf(out_file,unlimited_dims='Time')
+
+def remap(ds_in, wgt_file):
+    S_mat, dst_dims, nb = unpack(wgt_file)
+
+    dims = (dst_dims[1], dst_dims[0])
+    N = 1.2676506e+30 # NaN placeholder value
+    ncat=5
+
+    remapped = {}
+
+    for var in ds_in:
+        data_src = np.array(ds_in[var].values[:])
+        shape = len(np.shape(data_src))
+
+        if shape==2:
+            data_lvl = np.where(data_src.ravel()==N, 0, data_src.ravel())
+            data_rmp = S_mat.dot(data_lvl).reshape(dims)
+            remapped[var] = xr.DataArray(data_rmp, dims=("nj","ni"))
+        else: # 3
+            ncat = data_src.shape[0]
+            data_rmp = np.zeros((ncat, nb))
+            for d in range(ncat):
+                data_lvl = np.where(data_src[d,:,:].ravel()==N, 0, data_src[d,:,:].ravel())
+                data_rmp[d,:] = S_mat.dot(data_lvl)
+            data_rmp = data_rmp.reshape(ncat, dims[0], dims[1])
+            remapped[var] = xr.DataArray(data_rmp, dims=("ncat","nj","ni"))
+
+    ds_out = xr.Dataset(remapped)
+
+    return ds_out
+
+def unpack(wgt_file):
+    wgt_ds = xr.open_dataset(wgt_file)
+    na = wgt_ds['n_a'].shape[0]
+    nb = wgt_ds['n_b'].shape[0]
+    col = np.array(wgt_ds['col'].values[:])-1
+    row = np.array(wgt_ds['row'].values[:])-1
+    S = np.array(wgt_ds['S'].values[:])
+    S_mat = coo_matrix((S, (row, col)), shape=(nb, na))
+    
+    dst_dims = wgt_ds['dst_grid_dims'].values[:]
+    
+    return S_mat, dst_dims, nb
+
+def rotate(u, v, ang, rot):
+    u = np.asarray(u)
+    v = np.asarray(v)
+    ang = np.asarray(ang)
+
+    if (np.min(ang) < -1*np.pi) or (np.max(ang) > np.pi):
+        ang = np.radians(ang)
+
+    cosa = np.cos(ang)
+    sina = np.sin(ang)
+
+    if rot=='grid2NS':
+        rotated_u = u*cosa + v*sina
+        rotated_v = v*cosa - u*sina
+    elif rot=='NS2grid':
+        rotated_u = u*cosa - v*sina
+        rotated_v = v*cosa + u*sina
+
+    return rotated_u, rotated_v
+
+def get_centers(data):
+    return data[1::2, 1::2]
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Remap ice initial conditions from tripole to latlon grid")
-    parser.add_argument("--cdate",    required=True, help="Simulation start date")
-    parser.add_argument("--outdir",   required=True, help="Output (run) directory")
-    parser.add_argument("--src_grid", required=True, help="Path to source grid file")
-    parser.add_argument("--src_data", required=True, help="Path to source data file")
-    parser.add_argument("--dst_grid", required=True, help="Path to destination grid file (cannot include mask)")
-    parser.add_argument("--dst_mask", required=True, help="Path to destination grid kmt mask")
-    parser.add_argument("--wfile", required=False, help="Path to weights file (will generate weights if not supplied)")
+    parser.add_argument("--wgt_file", required=True, help="Path to weight file")
+    parser.add_argument("--src_file", required=True, help="Path to source data file")
+    parser.add_argument("--src_angl", required=True, help="Path to source grid angle file")
+    parser.add_argument("--msk_file", required=True, help="Path to destination mask file")
+    parser.add_argument("--dst_angl", required=True, help="Path to destination grid angle file")
+    parser.add_argument("--msk_name", required=False,help="Mask variable name. Defaults to 'mask'")
+    parser.add_argument("--out_file", required=True, help="Path to output file")
 
     args = parser.parse_args()
 
