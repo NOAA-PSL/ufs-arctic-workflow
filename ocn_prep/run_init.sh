@@ -13,9 +13,6 @@
 
 set -e -x -o pipefail
 
-module use /contrib/spack-stack/spack-stack-1.9.2/envs/ue-oneapi-2024.2.1/install/modulefiles/Core
-module load stack-oneapi
-
 # ----------------------------------------------------------------------------------- #
 #                                  Environment Setup                                  #
 # ----------------------------------------------------------------------------------- #
@@ -183,7 +180,7 @@ fi
 
 if [ ! -e "${OCN_RUN_DIR}/inputs/ocean_subgrid_v.nc" ] && [ ! -e "${OCN_RUN_DIR}/inputs/ocean_subgrid_u.nc" ]; then
     echo "U/V subgrid files do not exist. Creating them..."
-    python ${OCN_SCRIPT_DIR}/utils/make_subgrids.py --lat y --lon x --fin ocean_hgrid.nc --out ocean_subgrid
+    ${OCN_SCRIPT_DIR}/utils/make_subgrids.py --lat y --lon x --fin ocean_hgrid.nc --out ocean_subgrid
 fi
 
 if [ ! -e "${OCN_RUN_DIR}/inputs/${WGT_FILE_BASE}_h.nc" ]; then
@@ -353,7 +350,7 @@ if [ "$USE_DATM" = "true" ]; then
     ## End loop for forecast hours
     
     echo $NHRS
-    ${USHhafs}/hafs_mom6_gfs_forcings.py ${CDATE} -l ${NHRS} 2>&1 | tee ./mom6_gfs_forcings.log
+    python ${USHhafs}/hafs_mom6_gfs_forcings.py ${CDATE} -l ${NHRS} 2>&1 | tee ./mom6_gfs_forcings.log
     
     # Obtain net longwave and shortwave radiation file
     echo 'Obtaining NETLW'

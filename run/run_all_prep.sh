@@ -1,8 +1,17 @@
 #!/bin/bash
 set -e -x -o pipefail
 
+# Change config directory to run case
 CONFIG_DIR="./config_files/2020-08-27-03_6HR"
 NAMELIST_FILE="$CONFIG_DIR/config.in"
+
+module use /contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core
+module load stack-oneapi
+module load nco
+
+source /scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/etc/profile.d/conda.sh
+export PATH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/bin:$PATH"
+conda activate ufs-arctic
 
 if [[ -f "$NAMELIST_FILE" ]]; then
     source "$NAMELIST_FILE"
@@ -40,5 +49,5 @@ cd ${ATM_RUN_DIR}
 ./arctic_atm_prep.sh
 mv ${ATM_RUN_DIR}/intercom/*.nc ${RUN_DIR}/intercom/.
 
-# Retrieve config files
-cp ${CONFIG_DIR}/* ${RUN_DIR}/intercom/.
+## Retrieve config files
+#cp ${CONFIG_DIR}/* ${RUN_DIR}/intercom/.
