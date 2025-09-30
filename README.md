@@ -36,56 +36,65 @@ Table of Contents
 Guides
 ======
 
-Accessing Existing Test Cases (Hera)
+Accessing Existing Test Cases (Hera/Ursa)
 ------------------------------------
-These are existing run directories containing all inputs needed to run the corresponding test case. Each one can be run independently of the others.
+These are existing run directories containing all inputs needed to run the corresponding test case. Each one can be run independently of the others. All test cases can be found in `/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/` from Hera or Ursa. 
 1. Recursively copy all files from the directory on Hera to your working directory.
 2. From your working directory, edit `job_card` to specify account, QOS, and job name as needed.
 3. Run `sbatch job_card`
 
 Directories:
 * Static North Atlantic Atmosphere / Ocean:
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_ocn/`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_ocn/`
   * Components: FV3+MOM6
   * ATM grid: N. America (HAFS grid)
   * OCN grid: N. Atlantic (HAFS grid)
   * UFS Version: ufs-community/ufs-weather-model (f3ce169)
   * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 * Arctic MOM6 Mesh Test (Arctic ocean grid with HAFS North American atmosphere grid):
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_arc_ocn/`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/na_atm_arc_ocn/`
   * Components: FV3+MOM6
   * ATM grid: N. America (HAFS grid)
   * OCN grid: 10km Arctic
   * UFS Version: ufs-community/ufs-weather-model (f3ce169)
   * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 * Arctic FV3 and Arctic MOM6 Test (Both atmosphere and ocean are over the Arctic):
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_tile_atm_ocn/`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_tile_atm_ocn/`
   * Components: FV3+MOM6
   * ATM grid: C96 Arctic Tile
   * OCN grid: 10km Arctic
   * UFS Version: ufs-community/ufs-weather-model (f3ce169)
   * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DCDEPS_INLINE=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 * Global FV3 and Arctic MOM6+CICE6 (using `ufs.nfrac.aoflux` coupling):
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/glb_atm_arc_ocn_ice`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/glb_atm_arc_ocn_ice`
   * Components: FV3+MOM6+CICE6
   * ATM grid: C96 Global
   * OCN grid: 10km Arctic
   * UFS Version: ufs-community/ufs-weather-model (9b9a630)
   * Compile Flags: `-DAPP=S2S -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 * Regional Arctic FV3+MOM6+CICE6 (using default ice initial conditions):
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice_no_ics/`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice_no_ics/`
   * Components: FV3+MOM6+CICE6
   * ATM grid: Arctic C185
   * OCN grid: 10km Arctic
   * UFS Version: kristinbarton/ufs-weather-model (003b184)
   * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
 * Regional Arctic FV3+MOM6+CICE6 (with ice initial conditions from file):
-`/scratch4/BMC/gsienkf/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice/`
+`/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/test_cases/arc_atm_ocn_ice/`
   * Components: FV3+MOM6+CICE6
   * ATM grid: Arctic C185
   * OCN grid: 10km Arctic
   * UFS Version: kristinbarton/ufs-weather-model (003b184)
   * Compile Flags: `-DAPP=HAFS-MOM6W -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_HAFS_v1_gfdlmp_tedmf_nonsst`
+
+Generating Initial and Boundary Inputs
+-----------------------------------------------
+This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
+1. First, go the the `run` directory and edit `run_all_prep.sh` so that it points to the desired config directory found in `config_files` (or setup your own `config.in`).
+2. Run `./run_all_prep.py` from `run` directory to generate all inputs.
+3. Output and configure files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
+4. Running `./clean.sh` or (on `dev_ursa` branch), running with the `--clean` (e.g., `./run_all_prep.py --clean --all`) will clean up the directory before running. This is recommended if you have old run data in the run directory.
+5. (Only on `dev_ursa` branch: You can specify specific components to generate boundary conditions for. By default `./run_all_prep.py` will generate files for atmosphere, ocean, and ice. To specify only one or two components, include `--ocn`, `--ice`, and/or `--atm` in the script call. You can also use `--all` to clarify input files should be generated for all components.
 
 Setting up initial working ATM OCN ICE configuration
 ----------------------------------------------------
@@ -171,14 +180,6 @@ runSeq::
 9) Use the UFS Weather Model fork here to access the Arctic coupling mode: https://github.com/kristinbarton/ufs-weather-model
 
 Further discussion on setup can be found in the section on CICE below.
-
-Generating FV3/MOM6 Initial and Boundary Inputs
------------------------------------------------
-This will create both ocean and atmosphere inputs that can be placed into an existing run directory (e.g., see [Accessing Existing Test Cases (Hera)](#accessing-existing-test-cases-hera))
-1. First, go the the `run` directory and edit `run_all_prep.sh` so that it points to the desired config directory found in `config_files` (or setup your own `config.in`).
-2. Run `./run_all_prep` from `run` directory.
-3. Output and configure files will be placed in a top-level directory called `intercom`. Place all `*.nc` files into `INPUT` in your run directory and place `MOM_input` into top level of run directory.
-4. Running `./clean.sh` will reset the directory and delete all generated files.
 
 Generating only MOM6 Initial and Boundary Inputs
 ------------------------------------------------
