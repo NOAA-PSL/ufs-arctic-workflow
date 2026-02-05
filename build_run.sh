@@ -110,6 +110,14 @@ setup() {
     cp -P ${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua ${MODEL_DIR}/modulefiles/modules.fv3.lua
     cp -P ${UFS_DIR}/modulefiles/ufs_common.lua ${MODEL_DIR}/modulefiles/.
     cp -P ${UFS_DIR}/build/ufs_model ${MODEL_DIR}/fv3.exe
+
+    ln -s ${ATM_RES}_mosaic.nc                  ${MODEL_DIR}/INPUT/grid_spec.nc
+    ln -s ${ATM_RES}_oro_data.tile7.halo0.nc    ${MODEL_DIR}/INPUT/oro_data.nc 
+    ln -s ${ATM_RES}_grid.tile7.halo0.nc        ${MODEL_DIR}/INPUT/grid.tile7.halo0.nc
+    ln -s ${ATM_RES}_grid.tile7.halo4.nc        ${MODEL_DIR}/INPUT/grid.tile7.halo4.nc 
+    ln -s ${ATM_RES}_oro_data.tile7.halo4.nc    ${MODEL_DIR}/INPUT/oro_data.tile7.halo4.nc
+    ln -s ${ATM_RES}_oro_data_ls.tile7.halo0.nc ${MODEL_DIR}/INPUT/oro_data_ls.nc
+    ln -s ${ATM_RES}_oro_data_ss.tile7.halo0.nc ${MODEL_DIR}/INPUT/oro_data_ss.nc
     
     # Add fixed config files
     cp -P ${PREP_DIR}/config_files/templates/data_table ${MODEL_DIR}/.
@@ -121,6 +129,16 @@ setup() {
     cp -P ${PREP_DIR}/config_files/templates/ufs.configure ${MODEL_DIR}/.
     cp -P ${PREP_DIR}/config_files/templates/input.nml ${MODEL_DIR}/.
     cp -P ${PREP_DIR}/config_files/templates/MOM_input ${MODEL_DIR}/.
+
+    ln -s ${ATM_RES}.facsf.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
+    ln -s ${ATM_RES}.slope_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.slope_type.tile1.nc       
+    ln -s ${ATM_RES}.soil_color.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_color.tile1.nc  
+    ln -s ${ATM_RES}.substrate_temperature.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.substrate_temperature.tile1.nc  
+    ln -s ${ATM_RES}.vegetation_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_type.tile1.nc
+    ln -s ${ATM_RES}.maximum_snow_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.maximum_snow_albedo.tile1.nc  
+    ln -s ${ATM_RES}.snowfree_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.snowfree_albedo.tile1.nc  
+    ln -s ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
+    ln -s ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     
     # Adjust config templates for specific case
     awk -v y="$YEAR" -v m="$MONTH" -v d="$DAY" '
