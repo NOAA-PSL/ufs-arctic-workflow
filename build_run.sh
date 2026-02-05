@@ -36,7 +36,7 @@ if [[ "$ATM_RES" == "C185" ]]; then
     NPY=126
 elif [[ "$ATM_RES" == "C918" ]]; then
     NPX=726
-    NPY=126
+    NPY=576
 else
     echo "Error: Atmosphere resolution $ATM_RES is invalid; options are C918 or C185." >&2
     exit 1
