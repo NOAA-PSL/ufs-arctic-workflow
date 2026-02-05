@@ -84,10 +84,7 @@ setup() {
         ((count++))
     done
    
-    if [ -e ${TOP_DIR}/run ]; then
-        unlink ${TOP_DIR}/run
-    fi
-    ln -s ${MODEL_DIR} ${TOP_DIR}/run
+    ln -sfn "${MODEL_DIR}" "${TOP_DIR}/run"
     
     # Populate run directories
     mkdir -p ${MODEL_DIR}
