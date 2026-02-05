@@ -2,6 +2,10 @@
 
 set -e -o pipefail
 
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
+
 module use ${UFSUTILS_DIR}/modulefiles
 module load build.${SYSTEM}.intelllvm.lua 
 
@@ -21,11 +25,11 @@ regional=${ATM_REGIONAL}
 halo_bndy=${ATM_HALO_BNDY}
 halo_blend=${ATM_HALO_BLEND}
 
-mosaic_file_target_grid="${FIX_DIR}/${ATM_DST_CASE}/${ATM_DST_CASE}_mosaic.nc"
-fix_dir_target_grid="${FIX_DIR}/${ATM_DST_CASE}/sfc"
-orog_dir_target_grid="${FIX_DIR}/${ATM_DST_CASE}"
-orog_files_target_grid="${ATM_CASE}_oro_data.tile${ATM_TILE}.halo${ATM_HALO_BNDY}.nc"
-vcoord_file_target_grid="${FIX_DIR}/${ATM_DST_CASE}/global_hyblev.l${ATM_LEVS}.txt"
+mosaic_file_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/${ATM_DST_CASE}_mosaic.nc"
+fix_dir_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/sfc"
+orog_dir_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}"
+orog_files_target_grid="${ATM_RES}_oro_data.tile${ATM_TILE}.halo${ATM_HALO_BNDY}.nc"
+vcoord_file_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/global_hyblev.l${ATM_LEVS}.txt"
 
 convert_atm=.true.
 convert_sfc=.true.
@@ -47,8 +51,8 @@ wam_cold_start=.false.
 echo "Generating atmosphere IC files"
 
 if [ $ATM_ICTYPE = "fv3_restart" ]; then
-    mosaic_file_input_grid="${FIX_DIR}/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-    orog_dir_input_grid="${FIX_DIR}/${ATM_SRC_CASE}"
+    mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
+    orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
     orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
     data_dir_input_grid="${ATM_DATA_DIR}/ics"
     atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
@@ -231,7 +235,7 @@ cat>./fort.41<<EOF
  /
 EOF
 
-${APRUNC} ${CHGRES_EXEC} 2>&1 | tee ./chgres_cube_lbc_${FHR3}.log > /dev/null
+${APRUNC} --time=30:00 ${CHGRES_EXEC} 2>&1 | tee ./chgres_cube_lbc_${FHR3}.log > /dev/null
 
 mv ${ATM_RUN_DIR}/gfs.bndy.nc ${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc
 

@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e -o pipefail
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
 
 ###
 # Script Name: remap_ICs.sh

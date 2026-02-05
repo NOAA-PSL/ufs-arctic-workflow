@@ -7,6 +7,9 @@
 #SBATCH --time=05:00
 
 set -e -o pipefail
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
 
 module purge
 

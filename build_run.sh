@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e -o pipefail
+set -eo pipefail
 
 # To run:
 #   1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
@@ -16,18 +16,31 @@ set -e -o pipefail
 # 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
 export CDATE=20191028 #YYYYMMDD
 export NHRS=3 # Max run length is 240 Hours
+export ATM_RES='C185' # C185 (50km) / C918 (11km)
+
 export SACCT="ufs-artic" # Job submission account
 export SYSTEM="ursa" # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
+
 export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}" # Location to create run directory
 
 # ================================= #
 # Below does not need to be changed #
 # ================================= #
 
-ATM_RES='C185'
-FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
-TOP_DIR=$(pwd)
+export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
+export TOP_DIR=$(pwd)
+
+if [[ "$ATM_RES" == "C185" ]]; then
+    NPX=156
+    NPY=126
+elif [[ "$ATM_RES" == "C918" ]]; then
+    NPX=726
+    NPY=126
+else
+    echo "Error: Atmosphere resolution $ATM_RES is invalid; options are C918 or C185." >&2
+    exit 1
+fi
 
 # Compile model
 UFS_DIR=${TOP_DIR}/ufs-weather-model
@@ -89,8 +102,8 @@ setup() {
     ln -s gfs_data.tile7.nc ${MODEL_DIR}/INPUT/gfs_data.nc
     ln -s sfc_data.tile7.nc ${MODEL_DIR}/INPUT/sfc_data.nc
     ln -s gfs_bndy.tile7.000.nc ${MODEL_DIR}/INPUT/gfs.bndy.nc
-    cp -P ${FIX_DIR}/datasets/${ATM_RES}/*.nc ${MODEL_DIR}/.
-    cp -P ${FIX_DIR}/input_grid_files/atm/${ATM_RES}/* ${MODEL_DIR}/INPUT/.
+    cp -P ${FIX_DIR}/mesh_files/${ATM_RES}/sfc/*.nc ${MODEL_DIR}/.
+    cp -P ${FIX_DIR}/mesh_files/${ATM_RES}/*.nc ${MODEL_DIR}/INPUT/.
     cp -P ${FIX_DIR}/input_grid_files/ocn/* ${MODEL_DIR}/INPUT/.
     cp -P ${FIX_DIR}/input_grid_files/ice/* ${MODEL_DIR}/INPUT/.
     cp -P ${FIX_DIR}/datasets/run_dir/* ${MODEL_DIR}/.
@@ -148,6 +161,15 @@ setup() {
         print
       }
     ' ${PREP_DIR}/config_files/templates/job_card > ${MODEL_DIR}/job_card
+
+    awk -v x="$NPX" -v y="$NPY" -v r="$ATM_RES" '
+      {
+        gsub(/NPX/,  x)
+        gsub(/NPY/,  y)
+        gsub(/CRES/, r)
+        print
+      }
+    ' ${PREP_DIR}/config_files/templates/input.nml > ${MODEL_DIR}/input.nml
     
     cd ${PREP_DIR}
     ./clean.sh
@@ -163,24 +185,35 @@ run_model() {
 }
 
 help() {
-    echo "Usage: $0 [--norun]"
+    echo "Usage: $0 [--norun] [-v]"
     exit 1
 }
 
 # Run logic
-submit_job=true
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --norun)
-            submit_job=false
-            ;;
-        *)
-            echo "Unknown option: $1"
-            help
-            ;;
-    esac
-    shift
+SUBMIT_JOB=true
+export VERBOSE=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -v|--verbose)
+      export VERBOSE=true
+      shift
+      ;;
+    --norun)
+      RUN_COMMANDS=false
+      shift
+      ;;
+    *)
+      echo "Error: Unknown option '$1'" >&2
+      exit 1
+      ;;
+  esac
 done
+
+echo $VERBOSE
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
 
 compile
 echo ""
@@ -188,6 +221,6 @@ prep
 echo ""
 setup
 echo ""
-if [[ "$submit_job" == true ]]; then
+if [[ "$SUBMIT_JOB" == true ]]; then
     run_model
 fi

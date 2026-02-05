@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
+
 ncks -A -v ssh_segment_001 mom6_OBC_001.nc ssh_001.nc
 ncks -A -v ssh_segment_002 mom6_OBC_002.nc ssh_002.nc
 ncks -A -v ssh_segment_003 mom6_OBC_003.nc ssh_003.nc

@@ -12,6 +12,9 @@
 ###
 
 set -e -o pipefail
+if [[ "$VERBOSE" == true ]]; then
+    set -x
+fi
 
 # ----------------------------------------------------------------------------------- #
 #                                  Environment Setup                                  #

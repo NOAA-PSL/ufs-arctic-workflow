@@ -2,7 +2,7 @@
 
 # Used globally
 export MAIN_DIR="$(pwd)/../" # Top level directory
-export RUN_DIR="$(pwd)/" # Current run directory
+export PREP_DIR="$(pwd)/" # Current run directory
 
 export CDATE="${CDATE}00"
 export CDATEprior=$(date -d "${CDATE:0:8} ${CDATE:8:2} -1 day" +"%Y%m%d%H")
@@ -21,7 +21,7 @@ export OCN_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files
 export OCN_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${OCN_DST_GRID_NAME}/input_files/"
 export OCN_SRC_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
 export OCN_SCRIPT_DIR="${MAIN_DIR}/workflow/ocn"
-export OCN_RUN_DIR="${RUN_DIR}/ocn"
+export OCN_RUN_DIR="${PREP_DIR}/ocn"
 export OCNINTYPE='gefs' # Options: rtofs or gefs 
 export OCN_H_WGT_FILE="${OCNINTYPE}2arctic_h.nc"
 export OCN_U_WGT_FILE="${OCNINTYPE}2arctic_u.nc"
@@ -75,7 +75,7 @@ export ICE_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files
 export ICE_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${ICE_DST_GRID_NAME}/input_files/"
 export ICE_INPUT_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
 export ICE_SCRIPT_DIR="${MAIN_DIR}/workflow/ice"
-export ICE_RUN_DIR="${RUN_DIR}/ice"
+export ICE_RUN_DIR="${PREP_DIR}/ice"
 export ICE_SRC_FILE="Ct.mx025_SCRIP_masked.nc"
 export ICE_DST_FILE="ocean_mask.nc"
 export ICE_WGT_FILE="${ICEINTYPE}2arctic_h.nc"
@@ -86,9 +86,8 @@ export ICE_DST_ANG_FILE="ocean_hgrid.nc"
 
 # Used by ATM
 export ATM_SCRIPT_DIR="${MAIN_DIR}/workflow/atm"
-export ATM_RUN_DIR="${RUN_DIR}/atm"
-export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files"
-export ATM_CASE="C185"
+export ATM_RUN_DIR="${PREP_DIR}/atm"
+export ATM_RES=${ATM_RES:C185}
 export ATM_DATA_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}"
 export ATM_TILE=7
 export ATM_LEVS=128
@@ -96,17 +95,9 @@ export ATM_REGIONAL=1
 export ATM_HALO_BNDY=4
 export ATM_HALO_BLEND=8
 export ATM_SRC_CASE="C384"
-export ATM_DST_CASE="C185"
+export ATM_DST_CASE=${ATM_RES}
 export ATM_ICTYPE="gefsv13_replay" 
 export ATM_BCTYPE="gefsv13_replay"
-
 export ATM_NBDYINT=3 # Boundary input interval in hours
-
-export CHGRES_EXEC="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/hafs-community/UFS_UTILS/exec/chgres_cube"
-export SYSTEM="ursa"
-if [ $SYSTEM = "hera" ]; then
-    export UFSUTILS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/envs/UFS_UTILS"
-elif [ $SYSTEM = "ursa" ]; then
-    export UFSUTILS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/hafs-community/UFS_UTILS"
-    #export UFSUTILS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/ufs-community/UFS_UTILS"
-fi
+export CHGRES_EXEC="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/ufs-community/UFS_UTILS/build/exec/chgres_cube"
+export UFSUTILS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/ufs-community/UFS_UTILS/build"

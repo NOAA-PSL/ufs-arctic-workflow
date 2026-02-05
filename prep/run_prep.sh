@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e -o pipefail
 
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
+
 show_help() {
     cat << EOF
 Usage: $0 [OPTIONS]
@@ -55,7 +59,7 @@ setup() {
         exit 1
     fi
 
-    mkdir -p ${RUN_DIR}/intercom
+    mkdir -p ${PREP_DIR}/intercom
 }
 
 run_ocn() {
@@ -64,7 +68,7 @@ run_ocn() {
     mkdir -p ${OCN_RUN_DIR}/intercom
     cd ${OCN_SCRIPT_DIR}
     ./run_init.sh
-    mv ${OCN_RUN_DIR}/intercom/* ${RUN_DIR}/intercom/.
+    mv ${OCN_RUN_DIR}/intercom/* ${PREP_DIR}/intercom/.
     TASK_RAN=true
 }
 
@@ -78,7 +82,7 @@ run_ice() {
     ${NLN} ${ICE_INPUT_DIR}/* ${ICE_RUN_DIR}/.
     cd ${ICE_RUN_DIR}
     ./run_ice.sh
-    mv ${ICE_RUN_DIR}/intercom/* ${RUN_DIR}/intercom/.
+    mv ${ICE_RUN_DIR}/intercom/* ${PREP_DIR}/intercom/.
     TASK_RAN=true
 }
 
@@ -90,7 +94,7 @@ run_atm() {
     ${NLN} ${ATM_SCRIPT_DIR}/* ${ATM_RUN_DIR}/.
     cd ${ATM_RUN_DIR}
     ./arctic_atm_prep.sh
-    mv ${ATM_RUN_DIR}/intercom/*.nc ${RUN_DIR}/intercom/.
+    mv ${ATM_RUN_DIR}/intercom/*.nc ${PREP_DIR}/intercom/.
     TASK_RAN=true
 }
 
@@ -124,7 +128,7 @@ $RUN_ICE && run_ice
 $RUN_ATM && run_atm
 
 # Retrieve config files
-#cd ${RUN_DIR}
-#$TASK_RAN && cp ${CONFIG_DIR}/* ${RUN_DIR}/intercom/.
+#cd ${PREP_DIR}
+#$TASK_RAN && cp ${CONFIG_DIR}/* ${PREP_DIR}/intercom/.
 
 exit 0

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e -o pipefail
 
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
+
 ###
 # Script Name: remap_OBCs.sh
 # Author: Kristin Barton (UFS Arctic Team)

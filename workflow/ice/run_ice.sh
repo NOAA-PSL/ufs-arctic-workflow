@@ -1,6 +1,9 @@
 #!/bin/bash
 
 set -e -o pipefail
+if [[ "$VERBOSE" == "true" ]]; then
+    set -x
+fi
 
 yyyy=${CDATE:0:4}
 mm=${CDATE:4:2}
