@@ -215,7 +215,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --norun)
-      RUN_COMMANDS=false
+      SUBMIT_JOB=false
       shift
       ;;
     *)
