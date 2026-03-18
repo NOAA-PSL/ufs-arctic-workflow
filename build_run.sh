@@ -22,7 +22,8 @@ export SACCT="ufs-artic" # Job submission account
 export SYSTEM="ursa" # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
 
-export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}" # Location to create run directory
+export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Location to create run directory
+export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS" # Will run in "RUN_DIR/JOB_NAME"
 
 # ================================= #
 # Below does not need to be changed #
@@ -76,7 +77,7 @@ setup() {
     YEAR=${CDATE:0:4}
     MONTH=${CDATE:4:2}
     DAY=${CDATE:6:2}
-    base="${RUN_DIR}/${YEAR}-${MONTH}-${DAY}_${NHRS}HRS"
+    base="${RUN_DIR}/${JOB_NAME}"
     count=1
     MODEL_DIR=${base}
     while [ -e "$MODEL_DIR" ]; do
@@ -225,7 +226,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo $VERBOSE
 if [[ "$VERBOSE" == "true" ]]; then
     set -x
 fi
