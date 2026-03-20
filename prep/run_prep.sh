@@ -48,6 +48,9 @@ setup() {
         error_exit "PREP_DIR variable is not set in the environment."
     fi
 
+    mkdir -p "${PREP_DIR}/intercom"
+    mkdir -p "${PREP_DIR}/.status"
+
     local NAMELIST_FILE="./config_files/config.in"
     
     module purge
@@ -69,15 +72,31 @@ setup() {
 }
 
 run_ocn() {
+    local STATUS_FILE="${TOP_DIR}/.status/ocn.done"
+
+    if [ -f "${STATUS_FILE}" ]; then
+        log_info "Ocean prep already completed. Skipping."
+        return 0
+    fi
+
     log_info "Starting ocean prep..."
     mkdir -p "${OCN_RUN_DIR}/intercom"
     
     (cd ${OCN_SCRIPT_DIR} && ./run_init.sh) || error_exit "Ocean prep: run_init.sh failed."
 
-    mv "${OCN_RUN_DIR}"/intercom/* "${PREP_DIR}/intercom/"
+    rsync -a "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}/intercom/"
+    
+    touch "$STATUS_FILE"
 }
 
 run_ice() {
+    local STATUS_FILE="${TOP_DIR}/.status/ice.done"
+
+    if [ -f "${STATUS_FILE}" ]; then
+        log_info "Ice prep already completed. Skipping."
+        return 0
+    fi
+
     log_info "Starting ice prep..."
     mkdir -p "${ICE_RUN_DIR}/intercom"
 
@@ -88,20 +107,28 @@ run_ice() {
     
     (cd "${ICE_RUN_DIR}" && ./run_ice.sh) || error_exit "Ice prep: run_ice.sh failed"
 
-    mv "${ICE_RUN_DIR}"/intercom/* "${PREP_DIR}/intercom/"
+    rsync -a "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}/intercom/"
+    
+    touch "$STATUS_FILE"
 }
 
 run_atm() {
-    log_info "Starting atmosphere prep..."
-    log_info "mkdir -p ${ATM_RUN_DIR}/intercom/"
-    mkdir -p "${ATM_RUN_DIR}/intercom/"
+    local STATUS_FILE="${TOP_DIR}/.status/atm.done"
 
-    log_info "ln -sf ${ATM_SCRIPT_DIR}/* ${ATM_RUN_DIR}/"
+    if [ -f "${STATUS_FILE}" ]; then
+        log_info "Atmosphere prep already completed. Skipping."
+        return 0
+    fi
+
+    log_info "Starting atmosphere prep..."
+    mkdir -p "${ATM_RUN_DIR}/intercom/"
     ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
 
     (cd ${ATM_RUN_DIR} && ./arctic_atm_prep.sh) || error_exit "Atmosphere prep: arctic_atm_prep.sh failed"
+
+    rsync -a "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}/intercom/"
     
-    mv "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}/intercom/"
+    touch "$STATUS_FILE"
 }
 
 # ================================= #
@@ -129,7 +156,11 @@ done
 
 [[ "$VERBOSE" == "true" ]] && set -x
 
-[[ "$CLEAN" == "true" ]] && [[ -f "${TOP_DIR}/prep/clean.sh" ]] && (cd "${TOP_DIR}/prep" && ./clean.sh)
+if [[ "$CLEAN" == "true" ]] && [[ -f "${TOP_DIR}/prep/clean.sh" ]]; then 
+    (cd "${TOP_DIR}/prep" && ./clean.sh)
+    rm -rf "${TOP_DIR}/.status"
+    rm "${TOP_DIR}/prep_*.log"
+fi
 
 if [[ "$RUN_OCN" == "true" || "$RUN_ICE" == "true" || "$RUN_ATM" == "true" ]]; then
     setup

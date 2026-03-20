@@ -5,9 +5,13 @@
 # Vim ignores
 *.swp
 
+# Log ignores
+*.log
+
 # Run directory ignores
 prep/atm/
 prep/ocn/
 prep/ice/
 prep/intercom/
 run/
+.status

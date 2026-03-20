@@ -6,7 +6,7 @@ export CDATEprior=$(date -d "${CDATE:0:8} ${CDATE:8:2} -1 day" +"%Y%m%d%H")
 export NHRS=${NHRS} # Total number of forecast hours
 export SACCT=${SACCT}
 
-export NLN="ln -s"
+export NLN="ln -sf"
 export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 --account=${SACCT}"
 export APRUNC="srun --ntasks=6 --nodes=2 --ntasks-per-node=3 --cpus-per-task=2 --account=${SACCT}"
 

@@ -1,4 +1,12 @@
 #!/bin/bash
+#SBATCH --job-name=ufs_prep
+#SBATCH --account=ufs-artic
+#SBATCH --partition=u1-compute
+#SBATCH --time=30:00
+#SBATCH --nodes=2
+#SBATCH --ntasks=4
+#SBATCH --output=prep_%j.log
+
 set -eo pipefail
 
 # To run:
@@ -51,7 +59,11 @@ error_exit() {
 export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
 [ -d "$FIX_DIR" ]  || error_exit "Fix directory not found: $FIX_DIR"
 
-export TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+if [ -n "$SLURM_SUBMIT_DIR" ]; then
+    export TOP_DIR="$SLURM_SUBMIT_DIR"
+else
+    export TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+fi
 [ -d "$TOP_DIR" ]  || error_exit "build_run.sh script directory not found: $TOP_DIR."
 
 export UFS_DIR="${TOP_DIR}/ufs-weather-model"
@@ -101,7 +113,7 @@ compile() {
 
 prep() {
     log_info "Preparing input files for run..."
-    (cd "${PREP_DIR}" && ./run_prep.sh --clean --atm) || error_exit "Prep script failed."
+    (cd "${PREP_DIR}" && ./run_prep.sh --all) || error_exit "Prep script failed."
     log_info "Input file generation complete"
 }
 
@@ -133,32 +145,31 @@ setup() {
     local count=1
     MODEL_DIR="${base}"
 
-    while [ -e "$MODEL_DIR" ]; do
-        MODEL_DIR="${base}_${count}"
-        ((count++))
-    done
+    if [ ! -d "$MODEL_DIR" ]; then
+        log_info "Creating new run directory: $MODEL_DIR"
+        mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles}
+    else
+        log_warn "Run directory already exists. Resuming run setup based on existing files."
+    fi
    
     ln -sfn "${MODEL_DIR}" "${TOP_DIR}/run"
-    
-    # Populate run directories
-    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles}
     
     # Populate INPUT directory
     cp -P "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
 
     (
         cd "${MODEL_DIR}/INPUT"
-        ln -s gfs_data.tile7.nc gfs_data.nc
-        ln -s sfc_data.tile7.nc sfc_data.nc
-        ln -s gfs_bndy.tile7.000.nc gfs.bndy.nc
+        ln -sf gfs_data.tile7.nc gfs_data.nc
+        ln -sf sfc_data.tile7.nc sfc_data.nc
+        ln -sf gfs_bndy.tile7.000.nc gfs.bndy.nc
 
-        ln -s "${ATM_RES}_mosaic.nc" grid_spec.nc
-        ln -s "${ATM_RES}_oro_data.tile7.halo0.nc" oro_data.nc
-        ln -s "${ATM_RES}_grid.tile7.halo0.nc" grid.tile7.halo0.nc
-        ln -s "${ATM_RES}_grid.tile7.halo4.nc" grid.tile7.halo4.nc
-        ln -s "${ATM_RES}_oro_data.tile7.halo4.nc" oro_data.tile7.halo4.nc
-        ln -s "${ATM_RES}_oro_data_ls.tile7.halo0.nc" oro_data_ls.nc
-        ln -s "${ATM_RES}_oro_data_ss.tile7.halo0.nc" oro_data_ss.nc
+        ln -sf "${ATM_RES}_mosaic.nc" grid_spec.nc
+        ln -sf "${ATM_RES}_oro_data.tile7.halo0.nc" oro_data.nc
+        ln -sf "${ATM_RES}_grid.tile7.halo0.nc" grid.tile7.halo0.nc
+        ln -sf "${ATM_RES}_grid.tile7.halo4.nc" grid.tile7.halo4.nc
+        ln -sf "${ATM_RES}_oro_data.tile7.halo4.nc" oro_data.tile7.halo4.nc
+        ln -sf "${ATM_RES}_oro_data_ls.tile7.halo0.nc" oro_data_ls.nc
+        ln -sf "${ATM_RES}_oro_data_ss.tile7.halo0.nc" oro_data_ss.nc
     )
 
     cp -P "${FIX_DIR}/mesh_files/${ATM_RES}/sfc/"*.nc "${MODEL_DIR}/"
@@ -182,15 +193,15 @@ setup() {
     cp -P ${PREP_DIR}/config_files/templates/input.nml ${MODEL_DIR}/.
     cp -P ${PREP_DIR}/config_files/templates/MOM_input ${MODEL_DIR}/.
 
-    ln -s ${ATM_RES}.facsf.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
-    ln -s ${ATM_RES}.slope_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.slope_type.tile1.nc       
-    ln -s ${ATM_RES}.soil_color.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_color.tile1.nc  
-    ln -s ${ATM_RES}.substrate_temperature.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.substrate_temperature.tile1.nc  
-    ln -s ${ATM_RES}.vegetation_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_type.tile1.nc
-    ln -s ${ATM_RES}.maximum_snow_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.maximum_snow_albedo.tile1.nc  
-    ln -s ${ATM_RES}.snowfree_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.snowfree_albedo.tile1.nc  
-    ln -s ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
-    ln -s ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
+    ln -sf ${ATM_RES}.facsf.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
+    ln -sf ${ATM_RES}.slope_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.slope_type.tile1.nc       
+    ln -sf ${ATM_RES}.soil_color.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_color.tile1.nc  
+    ln -sf ${ATM_RES}.substrate_temperature.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.substrate_temperature.tile1.nc  
+    ln -sf ${ATM_RES}.vegetation_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_type.tile1.nc
+    ln -sf ${ATM_RES}.maximum_snow_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.maximum_snow_albedo.tile1.nc  
+    ln -sf ${ATM_RES}.snowfree_albedo.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.snowfree_albedo.tile1.nc  
+    ln -sf ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
+    ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     
     render_template "${PREP_DIR}/config_files/templates/ice_in" "${MODEL_DIR}/ice_in"
     render_template "${PREP_DIR}/config_files/templates/diag_table" "${MODEL_DIR}/diag_table"
@@ -253,9 +264,27 @@ fi
 
 log_info "Starting workflow for Date: $CDATE | Res: $ATM_RES | Length: ${NHRS}h"
 
+STATUS_DIR="${TOP_DIR}/.status"
+mkdir -p "$STATUS_DIR"
+PREP_STATUS="${STATUS_DIR}/prep_${JOB_NAME}.done"
+SETUP_STATUS="${STATUS_DIR}/setup_${JOB_NAME}.done"
+
 compile
-prep
-setup
+
+if [ ! -f "$PREP_STATUS" ]; then
+    # WARNING: You may need to remove --clean here so run_prep.sh doesn't delete partial progress
+    prep
+    touch "$PREP_STATUS"
+else
+    log_info "Prep phase already completed. Skipping."
+fi
+
+if [ ! -f "$SETUP_STATUS" ]; then
+    setup
+    touch "$SETUP_STATUS"
+else
+    log_info "Setup phase already completed. Skipping."
+fi
 
 if [[ "$SUBMIT_JOB" == true ]]; then
     run_model

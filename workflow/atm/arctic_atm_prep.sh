@@ -5,7 +5,7 @@
 #              initial/lateral boundary conditions using chgres_cube
 # ==============================================================================
 
-set -exo pipefail
+set -eo pipefail
 
 # ================================= #
 # Logging & Validation              #
@@ -133,28 +133,32 @@ run_chgres() {
 
 log_info "Generating surface initial condition files..."
 
-if [ "$SFC_ICTYPE" = "restart_files" ]; then
-    convert_atm=.false.
-    convert_sfc=.true.
-    convert_nst=.true.
-    mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-    orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
-    orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
-    data_dir_input_grid="${ATM_DATA_DIR}/ics"
-    atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
-    atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
-    sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
-    input_type="restart"
-    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-    tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+SFC_OUT="${ATM_RUN_DIR}/intercom/sfc_data.tile${ATM_TILE}.nc"
+if [ -s "$SFC_OUT" ]; then
+    log_info "SFC initial condition file already exists. Skipping."
 else
-    error_exit "Unknown or unsupported SFC input type: ${SFC_ICTYPE}"
+    if [ "$SFC_ICTYPE" = "restart_files" ]; then
+        convert_atm=.false.
+        convert_sfc=.true.
+        convert_nst=.true.
+        mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
+        orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
+        orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
+        data_dir_input_grid="${ATM_DATA_DIR}/ics"
+        atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
+        atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
+        sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
+        input_type="restart"
+        tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+        tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+    else
+        error_exit "Unknown or unsupported SFC input type: ${SFC_ICTYPE}"
+    fi
+
+    generate_namelist
+    run_chgres "./chgres_cube_sfc.log"
+    mv "${ATM_RUN_DIR}/out.sfc.tile${ATM_TILE}.nc" "$SFC_OUT"
 fi
-
-generate_namelist
-run_chgres "./chgres_cube_sfc.log"
-
-mv "${ATM_RUN_DIR}/out.sfc.tile${ATM_TILE}.nc" "${ATM_RUN_DIR}/intercom/sfc_data.tile${ATM_TILE}.nc"
 
 # ================================= #
 # Generating ATM Files              #
@@ -162,52 +166,58 @@ mv "${ATM_RUN_DIR}/out.sfc.tile${ATM_TILE}.nc" "${ATM_RUN_DIR}/intercom/sfc_data
 
 log_info "Generating atmosphere initial condition files..."
 
-if [ "$ATM_ICTYPE" = "restart_files" ]; then
-    convert_atm=.true.
-    convert_sfc=.false.
-    convert_nst=.false.
-    mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-    orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
-    orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
-    data_dir_input_grid="${ATM_DATA_DIR}/ics"
-    atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
-    atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
-    sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
-    input_type="restart"
-    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-    tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+ATM_OUT="${ATM_RUN_DIR}/intercom/gfs_data.tile${ATM_TILE}.nc"
 
-elif [ $ATM_ICTYPE = "grib_files" ]; then
-    convert_atm=.true.
-    convert_sfc=.false.
-    convert_nst=.false.
-    mosaic_file_input_grid="NULL"
-    orog_dir_input_grid="NULL"
-    orog_files_input_grid="NULL"
-    data_dir_input_grid="${ATM_DATA_DIR}/fcst/atmos/combined"
-    atm_core_files_input_grid="NULL"
-    atm_tracer_files_input_grid="NULL"
-    input_type="grib2"
-    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-    tracers_input='"spfh","clwmr","o3mr","ice_wat","rainwat","snowwat","graupel"'
-#    tracers='"sphum","liq_wat","o3mr"'
-#    tracers_input='"spfh","clwmr","o3mr"'
-    #grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
-    grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-    atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-    sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-    varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-
+if [ -s "$ATM_OUT" ]; then
+    log_info "ATM initial condition files already exist. Skipping."
 else
-    error_exit "Unknown or unsupported ATM input type: ${ATM_ICTYPE}"
+    if [ "$ATM_ICTYPE" = "restart_files" ]; then
+        convert_atm=.true.
+        convert_sfc=.false.
+        convert_nst=.false.
+        mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
+        orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
+        orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
+        data_dir_input_grid="${ATM_DATA_DIR}/ics"
+        atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
+        atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
+        sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
+        input_type="restart"
+        tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+        tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+    
+    elif [ $ATM_ICTYPE = "grib_files" ]; then
+        convert_atm=.true.
+        convert_sfc=.false.
+        convert_nst=.false.
+        mosaic_file_input_grid="NULL"
+        orog_dir_input_grid="NULL"
+        orog_files_input_grid="NULL"
+        data_dir_input_grid="${ATM_DATA_DIR}/fcst/atmos/combined"
+        atm_core_files_input_grid="NULL"
+        atm_tracer_files_input_grid="NULL"
+        input_type="grib2"
+        tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+        tracers_input='"spfh","clwmr","o3mr","ice_wat","rainwat","snowwat","graupel"'
+    #    tracers='"sphum","liq_wat","o3mr"'
+    #    tracers_input='"spfh","clwmr","o3mr"'
+        #grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
+        grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+        atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+        sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+        varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+    
+    else
+        error_exit "Unknown or unsupported ATM input type: ${ATM_ICTYPE}"
+    fi
+
+    generate_namelist
+    run_chgres "./chgres_cube_atm.log"
+    
+    mv "${ATM_RUN_DIR}/gfs_ctrl.nc" "${ATM_RUN_DIR}/intercom/gfs_ctrl.nc"
+    mv "${ATM_RUN_DIR}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.000.nc"
+    mv "${ATM_RUN_DIR}/out.atm.tile${ATM_TILE}.nc" "$ATM_OUT"
 fi
-
-generate_namelist
-run_chgres "./chgres_cube_atm.log"
-
-mv "${ATM_RUN_DIR}/gfs_ctrl.nc" "${ATM_RUN_DIR}/intercom/gfs_ctrl.nc"
-mv "${ATM_RUN_DIR}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.000.nc"
-mv "${ATM_RUN_DIR}/out.atm.tile${ATM_TILE}.nc" "${ATM_RUN_DIR}/intercom/gfs_data.tile${ATM_TILE}.nc"
 
 # ================================= #
 # Generating LBC Files              #
@@ -243,15 +253,21 @@ fi
 
 while [ "$FHR" -le "$FHRE" ]; do
     FHR3=$(printf "%03d" "$FHR")
-    log_info "-> Generating LBC file for forecast hour ${FHR3}"
+    LBC_OUT="${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc"
 
-    grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
+    if [ -s "$LBC_OUT" ]; then
+        log_info "-> LBC file for forecast hour ${FHR3} already exists. Skipping."
+    else
+        log_info "-> Generating LBC file for forecast hour ${FHR3}"
     
-    generate_namelist
-    run_chgres "./chgres_cube_lbc_${FHR3}.log"
-
-    mv "${ATM_RUN_DIR}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc"
-
+        grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
+        
+        generate_namelist
+        run_chgres "./chgres_cube_lbc_${FHR3}.log"
+    
+        mv "${ATM_RUN_DIR}/gfs.bndy.nc" "$LBC_OUT"
+    
+    fi
     FHR=$(($FHR + ${FHRI}))
 done
 

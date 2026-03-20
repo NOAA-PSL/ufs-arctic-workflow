@@ -71,14 +71,20 @@ fi
 log_info "Running Python interpolation script..."
 
 mkdir -p "${ICE_RUN_DIR}/intercom"
+OUT_FILE="${ICE_RUN_DIR}/intercom/replay_ice.arctic_grid.${yyyy}-${mm}-${dd}-${hh}-${sssss}.nc"
 
-python interp_ice.py \
-    --wgt_file "${ICE_WGT_FILE}" \
-    --src_file "iced.${yyyy}-${mm}-${dd}-${sssss}.nc" \
-    --src_angl "${ICE_SRC_ANG_FILE}" \
-    --msk_file "${ICE_DST_FILE}" \
-    --dst_angl "${ICE_DST_ANG_FILE}" \
-    --out_file "${ICE_RUN_DIR}/intercom/replay_ice.arctic_grid.${yyyy}-${mm}-${dd}-${hh}-${sssss}.nc" || error_exit "interp_ice.py crashed."
+if [ -f "$OUT_FILE" ] && [ -s "$OUT_FILE" ]; then
+    log_info "Interpolated ice file already exists. Skipping..."
+    log_info "--> $OUT_FILE"
+else
+    python interp_ice.py \
+        --wgt_file "${ICE_WGT_FILE}" \
+        --src_file "iced.${yyyy}-${mm}-${dd}-${sssss}.nc" \
+        --src_angl "${ICE_SRC_ANG_FILE}" \
+        --msk_file "${ICE_DST_FILE}" \
+        --dst_angl "${ICE_DST_ANG_FILE}" \
+        --out_file "${OUT_FILE}" || error_exit "interp_ice.py crashed."
+fi
 
 log_info "Ice IC file generation complete."
 exit 0
