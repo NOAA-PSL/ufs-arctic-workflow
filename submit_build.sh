@@ -5,16 +5,14 @@
 #SBATCH --time=30:00
 #SBATCH --nodes=2
 #SBATCH --ntasks=4
-#SBATCH --output=prep_%j.log
+#SBATCH --output=slurm_%j.log
 
 set -eo pipefail
 
 # To run:
 #   1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
-#   2. Open `build_run.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
-#   3. Run the workflow:
-#     `./build.sh` to automatically submit the job after setup.
-#     `./build.sh --norun` to setup the run directoy without submitting the job.
+#   2. Open `submit_build_job.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
+#   3. Run the workflow: `sbatch submit_build_job.sh`
 
 # ================================= #
 # User-adjusted parameters          #
@@ -31,7 +29,7 @@ export SYSTEM="ursa"        # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
 
 # Location to create run directory (will run in RUN_DIR/JOB_NAME)
-export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
+export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/refactor"
 export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 
 # ================================= #
@@ -69,9 +67,14 @@ fi
 export UFS_DIR="${TOP_DIR}/ufs-weather-model"
 [ -d "$UFS_DIR" ]  || error_exit "UFS Model directory not found: $UFS_DIR. Did you pull submodules?"
 
-export PREP_DIR="${TOP_DIR}/prep"
-[ -d "$PREP_DIR" ] || error_exit "Prep directory not found: $PREP_DIR"
+export CONFIG_DIR="${TOP_DIR}/config"
+[ -d "$CONFIG_DIR" ] || error_exit "Config directory not found: $CONFIG_DIR"
 
+export SCRIPT_DIR="${TOP_DIR}/workflow"
+[ -d "$SCRIPT_DIR" ] || error_exit "Script directory not found: $SCRIPT_DIR"
+
+export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
+export STATUS_DIR="${MODEL_DIR}/.status"
 
 if [[ "$ATM_RES" == "C185" ]]; then
     NPX=156
@@ -111,11 +114,6 @@ compile() {
     fi
 }
 
-prep() {
-    log_info "Preparing input files for run..."
-    (cd "${PREP_DIR}" && ./run_prep.sh --all) || error_exit "Prep script failed."
-    log_info "Input file generation complete"
-}
 
 # Helper function for rendering config files 
 render_template() {
@@ -141,22 +139,8 @@ setup() {
     MONTH="${CDATE:4:2}"
     DAY="${CDATE:6:2}"
 
-    local base="${RUN_DIR}/${JOB_NAME}"
-    local count=1
-    MODEL_DIR="${base}"
-
-    if [ ! -d "$MODEL_DIR" ]; then
-        log_info "Creating new run directory: $MODEL_DIR"
-        mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles}
-    else
-        log_warn "Run directory already exists. Resuming run setup based on existing files."
-    fi
+    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles} || error_exit "Could not create subdirectories in ${MODEL_DIR}."
    
-    ln -sfn "${MODEL_DIR}" "${TOP_DIR}/run"
-    
-    # Populate INPUT directory
-    cp -P "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
-
     (
         cd "${MODEL_DIR}/INPUT"
         ln -sf gfs_data.tile7.nc gfs_data.nc
@@ -183,15 +167,15 @@ setup() {
     cp -P "${UFS_DIR}/build/ufs_model" "${MODEL_DIR}/fv3.exe"
 
     # Add fixed config files
-    cp -P ${PREP_DIR}/config_files/templates/data_table ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/diag_table ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/fd_ufs.yaml ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/field_table ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/module-setup.sh ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/noahmptable.tbl ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/ufs.configure ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/input.nml ${MODEL_DIR}/.
-    cp -P ${PREP_DIR}/config_files/templates/MOM_input ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/data_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/diag_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/fd_ufs.yaml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/field_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/module-setup.sh ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/noahmptable.tbl ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/ufs.configure ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/input.nml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/MOM_input ${MODEL_DIR}/.
 
     ln -sf ${ATM_RES}.facsf.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
     ln -sf ${ATM_RES}.slope_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.slope_type.tile1.nc       
@@ -203,22 +187,96 @@ setup() {
     ln -sf ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     
-    render_template "${PREP_DIR}/config_files/templates/ice_in" "${MODEL_DIR}/ice_in"
-    render_template "${PREP_DIR}/config_files/templates/diag_table" "${MODEL_DIR}/diag_table"
-    render_template "${PREP_DIR}/config_files/templates/model_configure" "${MODEL_DIR}/model_configure"
-    render_template "${PREP_DIR}/config_files/templates/job_card" "${MODEL_DIR}/job_card"
-    render_template "${PREP_DIR}/config_files/templates/input.nml" "${MODEL_DIR}/input.nml"
-    
-    (cd "${PREP_DIR}" && ./clean.sh)
+    render_template "${CONFIG_DIR}/templates/ice_in" "${MODEL_DIR}/ice_in"
+    render_template "${CONFIG_DIR}/templates/diag_table" "${MODEL_DIR}/diag_table"
+    render_template "${CONFIG_DIR}/templates/model_configure" "${MODEL_DIR}/model_configure"
+    render_template "${CONFIG_DIR}/templates/job_card" "${MODEL_DIR}/job_card"
+    render_template "${CONFIG_DIR}/templates/input.nml" "${MODEL_DIR}/input.nml"
 
     log_info "Model run directory successfully built at:"
     log_info "--> ${MODEL_DIR}"
 
 }
 
+prep() {
+    log_info "Preparing input files for run..."
+
+    export PREP_DIR="${MODEL_DIR}/PREP"
+    mkdir -p "${PREP_DIR}"
+
+    (
+        log_info "Setting up environment and loading modules..."
+
+        local NAMELIST_FILE="${CONFIG_DIR}/config.in"
+
+        module purge
+        module purge
+        module use /contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core || error_exit "Failed to find module path /contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core"
+        module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
+        module load nco || error_exit "Failed to load nco module."
+        module load cdo || error_exit "Failed to load cdo module."
+        
+        local CONDA_SH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/etc/profile.d/conda.sh"
+        [ -f "$CONDA_SH" ] || error_exit "Conda init script not found at: $CONDA_SH"
+        source "$CONDA_SH"
+        export PATH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/bin:$PATH"
+        conda activate ufs-arctic || error_exit "Failed to activate conda environment: ufs-arctic"
+        
+        source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
+
+        # Preparing file paths
+        cd "${PREP_DIR}"
+        mkdir -p ${PREP_DIR}/intercom
+
+        # --- Run ocean init ---
+        log_info "Starting ocean prep..."
+        if [ -f "${STATUS_DIR}/ocn.done" ]; then
+            log_info "Ocean prep already completed. Skipping."
+        else 
+            mkdir -p "${OCN_RUN_DIR}/intercom"
+            (cd ${OCN_SCRIPT_DIR} && ./run_ocn_prep.sh) || error_exit "Ocean prep: run_ocn_prep.sh failed."
+            rsync -a "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+            touch "${STATUS_DIR}/ocn.done"
+        fi
+
+        # --- Run ice init ---
+        log_info "Starting ice prep..."
+        if [ -f "${STATUS_DIR}/ice.done" ]; then
+            log_info "Ice prep already completed. Skipping."
+        else
+            mkdir -p "${ICE_RUN_DIR}/intercom"
+            ln -sf "${ICE_SCRIPT_DIR}"/*   "${ICE_RUN_DIR}"/.
+            ln -sf "${ICE_SRC_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
+            ln -sf "${ICE_DST_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
+            ln -sf "${ICE_INPUT_DIR}"/*    "${ICE_RUN_DIR}"/.
+            (cd "${ICE_RUN_DIR}" && ./run_ice_prep.sh) || error_exit "Ice prep: run_ice_prep.sh failed"
+            rsync -a "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+            touch "${STATUS_DIR}/ice.done"
+        fi
+
+        # --- Run atm init ---
+        log_info "Starting atmosphere prep..."
+        if [ -f "${STATUS_DIR}/atm.done" ]; then
+            log_info "Atmosphere prep already completed. Skipping."
+        else
+            mkdir -p "${ATM_RUN_DIR}/intercom/"
+            ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
+            (cd ${ATM_RUN_DIR} && ./run_atm_prep.sh) || error_exit "Atmosphere prep: run_atm_prep.sh failed"
+            rsync -a "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+            touch "${STATUS_DIR}/atm.done"
+        fi
+    ) || error_exit "Prep script failed."
+
+    log_info "Input file generation complete."
+
+    log_info "Populating INPUT directory with generated files..."
+    ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/. || error_exit "Failed to link files from ${PREP_DIR}/intercom to ${MODEL_DIR}/INPUT"
+
+}
+
 run_model() {
     log_info "Submitting model run..."
-    (cd "${TOP_DIR}/run" && sbatch job_card) || error_exit "Job submission failed."
+    (cd "${MODEL_DIR}" && sbatch job_card) || error_exit "Job submission failed."
 }
 
 help() {
@@ -226,7 +284,6 @@ help() {
     echo ""
     echo "Options:"
     echo "  --norun        Setup the run directory without submitting the job to the scheduler."
-    echo "  -v, --verbose  Enable verbose bash debugging (set -x)."
     echo "  -h, --help     Display this help message and exit."
     exit 0
 }
@@ -240,10 +297,6 @@ export VERBOSE="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -v|--verbose)
-      export VERBOSE="true"
-      shift
-      ;;
     --norun)
       SUBMIT_JOB=false
       shift
@@ -258,32 +311,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ "$VERBOSE" == "true" ]]; then
-    set -x
-fi
-
 log_info "Starting workflow for Date: $CDATE | Res: $ATM_RES | Length: ${NHRS}h"
 
-STATUS_DIR="${TOP_DIR}/.status"
-mkdir -p "$STATUS_DIR"
-PREP_STATUS="${STATUS_DIR}/prep_${JOB_NAME}.done"
-SETUP_STATUS="${STATUS_DIR}/setup_${JOB_NAME}.done"
+if [ ! -d "$MODEL_DIR" ]; then
+    log_info "Creating new run directory: $MODEL_DIR"
+    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles,.status}
+else
+    log_warn "Run directory already exists in ${MODEL_DIR}."
+    log_warn "Resuming run setup based on existing files."
+fi
+
+if [ ! -d "$STATUS_DIR" ]; then
+    mkdir -p "$STATUS_DIR"
+fi
 
 compile
 
-if [ ! -f "$PREP_STATUS" ]; then
-    # WARNING: You may need to remove --clean here so run_prep.sh doesn't delete partial progress
-    prep
-    touch "$PREP_STATUS"
-else
-    log_info "Prep phase already completed. Skipping."
-fi
-
-if [ ! -f "$SETUP_STATUS" ]; then
+if [ ! -f "${STATUS_DIR}/setup.done" ]; then
     setup
-    touch "$SETUP_STATUS"
+    touch "${STATUS_DIR}/setup.done"
 else
     log_info "Setup phase already completed. Skipping."
+fi
+
+if [ ! -f "${STATUS_DIR}/prep.done" ]; then
+    prep
+    touch "${STATUS_DIR}/prep.done"
+else
+    log_info "Prep phase already completed. Skipping."
 fi
 
 if [[ "$SUBMIT_JOB" == true ]]; then
@@ -292,4 +347,4 @@ else
     log_warn "Skipping job submission because --norun was specified."
 fi
 
-log_info "Workflow script completed successfully."
+log_info "Workflow script completed successfully. Model directory located at: ${MODEL_DIR}."
