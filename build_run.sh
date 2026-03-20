@@ -14,23 +14,52 @@ set -eo pipefail
 
 # Current available dates are:
 # 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
-export CDATE=20191028 #YYYYMMDD
-export NHRS=3 # Max run length is 240 Hours
-export ATM_RES='C185' # C185 (50km) / C918 (11km)
+export CDATE=20191028       # Start date in YYYYMMDD format
+export NHRS=3               # Run length in hours (Max: 240)
+export ATM_RES='C185'       # Atmospheric resolution: C185 (50km) or C918 (11km)
 
-export SACCT="ufs-artic" # Job submission account
-export SYSTEM="ursa" # ursa, hera
+export SACCT="ufs-artic"    # Job submission account
+export SYSTEM="ursa"        # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
 
-export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Location to create run directory
-export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS" # Will run in "RUN_DIR/JOB_NAME"
+# Location to create run directory (will run in RUN_DIR/JOB_NAME)
+export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
+export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 
 # ================================= #
-# Below does not need to be changed #
+# Logging & Error Handling Helpers  #
+# ================================= #
+
+# Define ANSI color codes for terminal output
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly NC='\033[0m' # No Color
+
+log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+error_exit() {
+    log_error "$1"
+    exit 1
+}
+
+# ================================= #
+# System Paths & Validation         #
 # ================================= #
 
 export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
-export TOP_DIR=$(pwd)
+[ -d "$FIX_DIR" ]  || error_exit "Fix directory not found: $FIX_DIR"
+
+export TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+[ -d "$TOP_DIR" ]  || error_exit "build_run.sh script directory not found: $TOP_DIR."
+
+export UFS_DIR="${TOP_DIR}/ufs-weather-model"
+[ -d "$UFS_DIR" ]  || error_exit "UFS Model directory not found: $UFS_DIR. Did you pull submodules?"
+
+export PREP_DIR="${TOP_DIR}/prep"
+[ -d "$PREP_DIR" ] || error_exit "Prep directory not found: $PREP_DIR"
+
 
 if [[ "$ATM_RES" == "C185" ]]; then
     NPX=156
@@ -39,47 +68,71 @@ elif [[ "$ATM_RES" == "C918" ]]; then
     NPX=726
     NPY=576
 else
-    echo "Error: Atmosphere resolution $ATM_RES is invalid; options are C918 or C185." >&2
+    echo "Error: Atmosphere resolution $ATM_RES is invalid.  Valid options: C918, C185." >&2
     exit 1
 fi
 
+# ================================= #
+# Functions                         #
+# ================================= #
+
 # Compile model
-UFS_DIR=${TOP_DIR}/ufs-weather-model
 compile() {
     if [ ! -f "${UFS_DIR}/build/ufs_model" ]; then
-        echo "Compiling UFS"
-        if [ -f "{UFS_DIR}/build" ]; then
-            cd ${UFS_DIR}/build
-            make clean
+        log_info "UFS executable not found. Starting compilation..."
+
+        if [ -d "${UFS_DIR}/build" ]; then
+            log_warn "Existing build directory found. Running 'make clean'..."
+            (cd "${UFS_DIR}/build" && make clean)
         fi
-        cd ${UFS_DIR}
-        module use modulefiles
-        module load ufs_${SYSTEM}.${COMPILER}.lua
-        CMAKE_FLAGS="-DDEBUG=OFF -DAPP=S2S -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_GFS_v17_coupled_p8_ugwpv1" ./build.sh
-        echo "Compilation Complete"
+
+        (
+            cd "${UFS_DIR}"
+            module use modulefiles || error_exit "Failed to find modulefiles."
+            module load "ufs_${SYSTEM}.${COMPILER}.lua" || error_exit "Failed to load module: ufs_${SYSTEM}.${COMPILER}.lua. Did you run: git submodule update --init --recursive ?"
+            log_info "Running CMake and build scripts..."
+            CMAKE_FLAGS="-DDEBUG=OFF -DAPP=S2S -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_GFS_v17_coupled_p8_ugwpv1" ./build.sh
+        )
+        log_info "Compilation Complete"
     else
-        echo "Skipping compile; UFS executable exists: ${UFS_DIR}/build/ufs_model"
+        log_info "Skipping compile; UFS executable already exists at: ${UFS_DIR}/build/ufs_model"
     fi
 }
 
-# Run initial condition prep
-PREP_DIR=${TOP_DIR}/prep
 prep() {
-    echo "Running input file prep script"
-    cd ${PREP_DIR}
-    ./run_prep.sh --clean --all
-    cd ${TOP_DIR}
-    echo "Input File Generation Complete"
+    log_info "Preparing input files for run..."
+    (cd "${PREP_DIR}" && ./run_prep.sh --clean --atm) || error_exit "Prep script failed."
+    log_info "Input file generation complete"
+}
+
+# Helper function for rendering config files 
+render_template() {
+    local src="$1"
+    local dest="$2"
+
+    [ -f "$src" ] || error_exit "Template file missing: $src"
+
+    sed -e "s|YEAR|${YEAR}|g" \
+        -e "s|MONTH|${MONTH}|g" \
+        -e "s|DAY|${DAY}|g" \
+        -e "s|NHRS|${NHRS}|g" \
+        -e "s|SACCT|${SACCT}|g" \
+        -e "s|NPX|${NPX}|g" \
+        -e "s|NPY|${NPY}|g" \
+        -e "s|CRES|${ATM_RES}|g" \
+        "${src}" > "${dest}" || error_exit "Failed to render template: $src"
 }
 
 # Make a new run directory
 setup() {
-    YEAR=${CDATE:0:4}
-    MONTH=${CDATE:4:2}
-    DAY=${CDATE:6:2}
-    base="${RUN_DIR}/${JOB_NAME}"
-    count=1
-    MODEL_DIR=${base}
+    YEAR="${CDATE:0:4}"
+    MONTH="${CDATE:4:2}"
+    DAY="${CDATE:6:2}"
+
+    local base="${RUN_DIR}/${JOB_NAME}"
+    local count=1
+    MODEL_DIR="${base}"
+
     while [ -e "$MODEL_DIR" ]; do
         MODEL_DIR="${base}_${count}"
         ((count++))
@@ -88,35 +141,36 @@ setup() {
     ln -sfn "${MODEL_DIR}" "${TOP_DIR}/run"
     
     # Populate run directories
-    mkdir -p ${MODEL_DIR}
-    mkdir -p ${MODEL_DIR}/INPUT
-    mkdir -p ${MODEL_DIR}/OUTPUT
-    mkdir -p ${MODEL_DIR}/RESTART
-    mkdir -p ${MODEL_DIR}/history
-    mkdir -p ${MODEL_DIR}/modulefiles
+    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles}
     
     # Populate INPUT directory
-    cp -P ${PREP_DIR}/intercom/* ${MODEL_DIR}/INPUT/.
-    ln -s gfs_data.tile7.nc ${MODEL_DIR}/INPUT/gfs_data.nc
-    ln -s sfc_data.tile7.nc ${MODEL_DIR}/INPUT/sfc_data.nc
-    ln -s gfs_bndy.tile7.000.nc ${MODEL_DIR}/INPUT/gfs.bndy.nc
-    cp -P ${FIX_DIR}/mesh_files/${ATM_RES}/sfc/*.nc ${MODEL_DIR}/.
-    cp -P ${FIX_DIR}/mesh_files/${ATM_RES}/*.nc ${MODEL_DIR}/INPUT/.
-    cp -P ${FIX_DIR}/input_grid_files/ocn/* ${MODEL_DIR}/INPUT/.
-    cp -P ${FIX_DIR}/input_grid_files/ice/* ${MODEL_DIR}/INPUT/.
-    cp -P ${FIX_DIR}/datasets/run_dir/* ${MODEL_DIR}/.
-    cp -P ${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua ${MODEL_DIR}/modulefiles/modules.fv3.lua
-    cp -P ${UFS_DIR}/modulefiles/ufs_common.lua ${MODEL_DIR}/modulefiles/.
-    cp -P ${UFS_DIR}/build/ufs_model ${MODEL_DIR}/fv3.exe
+    cp -P "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
 
-    ln -s ${ATM_RES}_mosaic.nc                  ${MODEL_DIR}/INPUT/grid_spec.nc
-    ln -s ${ATM_RES}_oro_data.tile7.halo0.nc    ${MODEL_DIR}/INPUT/oro_data.nc 
-    ln -s ${ATM_RES}_grid.tile7.halo0.nc        ${MODEL_DIR}/INPUT/grid.tile7.halo0.nc
-    ln -s ${ATM_RES}_grid.tile7.halo4.nc        ${MODEL_DIR}/INPUT/grid.tile7.halo4.nc 
-    ln -s ${ATM_RES}_oro_data.tile7.halo4.nc    ${MODEL_DIR}/INPUT/oro_data.tile7.halo4.nc
-    ln -s ${ATM_RES}_oro_data_ls.tile7.halo0.nc ${MODEL_DIR}/INPUT/oro_data_ls.nc
-    ln -s ${ATM_RES}_oro_data_ss.tile7.halo0.nc ${MODEL_DIR}/INPUT/oro_data_ss.nc
-    
+    (
+        cd "${MODEL_DIR}/INPUT"
+        ln -s gfs_data.tile7.nc gfs_data.nc
+        ln -s sfc_data.tile7.nc sfc_data.nc
+        ln -s gfs_bndy.tile7.000.nc gfs.bndy.nc
+
+        ln -s "${ATM_RES}_mosaic.nc" grid_spec.nc
+        ln -s "${ATM_RES}_oro_data.tile7.halo0.nc" oro_data.nc
+        ln -s "${ATM_RES}_grid.tile7.halo0.nc" grid.tile7.halo0.nc
+        ln -s "${ATM_RES}_grid.tile7.halo4.nc" grid.tile7.halo4.nc
+        ln -s "${ATM_RES}_oro_data.tile7.halo4.nc" oro_data.tile7.halo4.nc
+        ln -s "${ATM_RES}_oro_data_ls.tile7.halo0.nc" oro_data_ls.nc
+        ln -s "${ATM_RES}_oro_data_ss.tile7.halo0.nc" oro_data_ss.nc
+    )
+
+    cp -P "${FIX_DIR}/mesh_files/${ATM_RES}/sfc/"*.nc "${MODEL_DIR}/"
+    cp -P "${FIX_DIR}/mesh_files/${ATM_RES}/"*.nc "${MODEL_DIR}/INPUT/"
+    cp -P "${FIX_DIR}/input_grid_files/ocn/"* "${MODEL_DIR}/INPUT/"
+    cp -P "${FIX_DIR}/input_grid_files/ice/"* "${MODEL_DIR}/INPUT/"
+    cp -P "${FIX_DIR}/datasets/run_dir/"* "${MODEL_DIR}/"
+
+    cp -P "${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua" "${MODEL_DIR}/modulefiles/modules.fv3.lua"
+    cp -P "${UFS_DIR}/modulefiles/ufs_common.lua" "${MODEL_DIR}/modulefiles/"
+    cp -P "${UFS_DIR}/build/ufs_model" "${MODEL_DIR}/fv3.exe"
+
     # Add fixed config files
     cp -P ${PREP_DIR}/config_files/templates/data_table ${MODEL_DIR}/.
     cp -P ${PREP_DIR}/config_files/templates/diag_table ${MODEL_DIR}/.
@@ -138,90 +192,57 @@ setup() {
     ln -s ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
     ln -s ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     
-    # Adjust config templates for specific case
-    awk -v y="$YEAR" -v m="$MONTH" -v d="$DAY" '
-      {
-        gsub(/YEAR/, y)
-        gsub(/MONTH/,   m)
-        gsub(/DAY/,   d)
-        print
-      }
-    ' ${PREP_DIR}/config_files/templates/ice_in > ${MODEL_DIR}/ice_in 
+    render_template "${PREP_DIR}/config_files/templates/ice_in" "${MODEL_DIR}/ice_in"
+    render_template "${PREP_DIR}/config_files/templates/diag_table" "${MODEL_DIR}/diag_table"
+    render_template "${PREP_DIR}/config_files/templates/model_configure" "${MODEL_DIR}/model_configure"
+    render_template "${PREP_DIR}/config_files/templates/job_card" "${MODEL_DIR}/job_card"
+    render_template "${PREP_DIR}/config_files/templates/input.nml" "${MODEL_DIR}/input.nml"
     
-    awk -v y="$YEAR" -v m="$MONTH" -v d="$DAY" '
-      {
-        gsub(/YEAR/, y)
-        gsub(/MONTH/,   m)
-        gsub(/DAY/,   d)
-        print
-      }
-    ' ${PREP_DIR}/config_files/templates/diag_table > ${MODEL_DIR}/diag_table
-    
-    awk -v y="$YEAR" -v m="$MONTH" -v d="$DAY" -v h="$NHRS" '
-      {
-        gsub(/YEAR/, y)
-        gsub(/MONTH/,   m)
-        gsub(/DAY/,   d)
-        gsub(/NHRS/,   h)
-        print
-      }
-    ' ${PREP_DIR}/config_files/templates/model_configure > ${MODEL_DIR}/model_configure
-    
-    awk -v y="$YEAR" -v m="$MONTH" -v d="$DAY" -v h="$NHRS" -v a="$SACCT" '
-      {
-        gsub(/YEAR/, y)
-        gsub(/MONTH/,   m)
-        gsub(/DAY/,   d)
-        gsub(/NHRS/,   h)
-        gsub(/SACCT/,   a)
-        print
-      }
-    ' ${PREP_DIR}/config_files/templates/job_card > ${MODEL_DIR}/job_card
+    (cd "${PREP_DIR}" && ./clean.sh)
 
-    awk -v x="$NPX" -v y="$NPY" -v r="$ATM_RES" '
-      {
-        gsub(/NPX/,  x)
-        gsub(/NPY/,  y)
-        gsub(/CRES/, r)
-        print
-      }
-    ' ${PREP_DIR}/config_files/templates/input.nml > ${MODEL_DIR}/input.nml
-    
-    cd ${PREP_DIR}
-    ./clean.sh
-    echo " ===== "
-    echo ""
-    echo "Model run directory built in ${MODEL_DIR}"
+    log_info "Model run directory successfully built at:"
+    log_info "--> ${MODEL_DIR}"
+
 }
 
 run_model() {
-    echo "Submitting model run"
-    cd ${TOP_DIR}/run
-    sbatch job_card
+    log_info "Submitting model run..."
+    (cd "${TOP_DIR}/run" && sbatch job_card) || error_exit "Job submission failed."
 }
 
 help() {
-    echo "Usage: $0 [--norun] [-v]"
-    exit 1
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --norun        Setup the run directory without submitting the job to the scheduler."
+    echo "  -v, --verbose  Enable verbose bash debugging (set -x)."
+    echo "  -h, --help     Display this help message and exit."
+    exit 0
 }
 
-# Run logic
+# ================================= #
+# Main Execution Logic              #
+# ================================= #
+
 SUBMIT_JOB=true
-export VERBOSE=false
+export VERBOSE="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -v|--verbose)
-      export VERBOSE=true
+      export VERBOSE="true"
       shift
       ;;
     --norun)
       SUBMIT_JOB=false
       shift
       ;;
+    -h|--help)
+      help
+      ;;
     *)
-      echo "Error: Unknown option '$1'" >&2
-      exit 1
+      echo "Error: Unknown option '$1'. Use -h or --help for usage." >&2
+      help
       ;;
   esac
 done
@@ -230,12 +251,16 @@ if [[ "$VERBOSE" == "true" ]]; then
     set -x
 fi
 
+log_info "Starting workflow for Date: $CDATE | Res: $ATM_RES | Length: ${NHRS}h"
+
 compile
-echo ""
 prep
-echo ""
 setup
-echo ""
+
 if [[ "$SUBMIT_JOB" == true ]]; then
     run_model
+else
+    log_warn "Skipping job submission because --norun was specified."
 fi
+
+log_info "Workflow script completed successfully."

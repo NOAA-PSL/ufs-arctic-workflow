@@ -1,29 +1,52 @@
 #!/bin/sh
+# ==============================================================================
+# Atmosphere Prep Script (arctic_atm_prep.sh)
+# Description: Generates surface initial conditions and atmosphere 
+#              initial/lateral boundary conditions using chgres_cube
+# ==============================================================================
 
-set -e -o pipefail
+set -exo pipefail
 
-if [[ "$VERBOSE" == "true" ]]; then
-    set -x
-fi
+# ================================= #
+# Logging & Validation              #
+# ================================= #
 
-module use ${UFSUTILS_DIR}/modulefiles
-module load build.${SYSTEM}.intelllvm.lua 
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly NC='\033[0m'
 
-CHGRES_EXEC=${CHGRES_EXEC}
+log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+error_exit() { log_error "$1"; exit 1; }
 
-echo "Using chgres_cube in $CHGRES_EXEC"
-echo ""
+[[ "$VERBOSE" == "true" ]] && set -x
 
-CDATE=${CDATE}
-cycle_year=$(echo $CDATE | cut -c 1-4)
-cycle_mon=$(echo $CDATE | cut -c 5-6)
-cycle_day=$(echo $CDATE | cut -c 7-8)
-cycle_hour=$(echo $CDATE | cut -c 9-10)
+[[ -z "$CHGRES_EXEC" ]] && error_exit "CHGRES_EXEC is not set."
+[[ -z "$CDATE" ]] && error_exit "CDATE is not set."
+[[ -z "$ATM_RUN_DIR" ]] && error_exit "ATM_RUN_DIR is not set."
+
+log_info "Using chgres_cube at: $CHGRES_EXEC"
+
+module use "${UFSUTILS_DIR}/modulefiles"
+module load "build.${SYSTEM}.intelllvm.lua" || error_exit "Failed to load chgres module."
+
+# ================================= #
+# Global Variables & Date Setup     #
+# ================================= #
+
+
+cycle_year="${CDATE:0:4}"
+cycle_mon="${CDATE:4:2}"
+cycle_day="${CDATE:6:2}"
+cycle_hour="${CDATE:8:2}"
+cycle_hour="${cycle_hour:-00}"
 
 # Shared namelist values
-regional=${ATM_REGIONAL}
-halo_bndy=${ATM_HALO_BNDY}
-halo_blend=${ATM_HALO_BLEND}
+regional="${ATM_REGIONAL}"
+halo_bndy="${ATM_HALO_BNDY}"
+halo_blend="${ATM_HALO_BLEND}"
 
 mosaic_file_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/${ATM_DST_CASE}_mosaic.nc"
 fix_dir_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/sfc"
@@ -42,33 +65,12 @@ nsoill_out=4
 thomp_mp_climo_file="NULL"
 wam_cold_start=.false.
 
-###########################
-## Generating SFC Files  ##
-###########################
+# ================================= #
+# Function Definitions              #
+# ================================= #
 
-echo "Generating surface IC files"
-
-if [ $SFC_ICTYPE = "restart_files" ]; then
-    convert_atm=.false.
-    convert_sfc=.true.
-    convert_nst=.true.
-    mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-    orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
-    orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
-    data_dir_input_grid="${ATM_DATA_DIR}/ics"
-    atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
-    atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
-    sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
-    input_type="restart"
-    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-    tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-else
-    echo "FATAL ERROR: Unknown or unsupported SFC input type ${SFC_ICTYPE}"
-    exit 9
-fi
-
-# Create namelist and run chgres_cube
-cat>./fort.41<<EOF
+generate_namelist() {
+    cat > ./fort.41 <<EOF
 &config
  mosaic_file_target_grid="${mosaic_file_target_grid:-NULL}"
  fix_dir_target_grid="${fix_dir_target_grid:-NULL}"
@@ -87,7 +89,7 @@ cat>./fort.41<<EOF
  grib2_file_input_grid="${grib2_file_input_grid:-NULL}"
  geogrid_file_input_grid="${geogrid_file_input_grid:-NULL}"
  varmap_file="${varmap_file:-NULL}"
- wam_parm_file="${warm_parm_file:-NULL}"
+ wam_parm_file="${wam_parm_file:-NULL}"
  cycle_year=${cycle_year}
  cycle_mon=${cycle_mon}
  cycle_day=${cycle_day}
@@ -107,24 +109,60 @@ cat>./fort.41<<EOF
  minmax_vgfrc_from_climo=${minmax_vgfrc_from_climo}
  tg3_from_soil=${tg3_from_soil}
  lai_from_climo=${lai_from_climo}
- external_model=${external_model}
+ external_model="${external_model}"
  nsoill_out=${nsoill_out}
  thomp_mp_climo_file="${thomp_mp_climo_file:-NULL}"
  wam_cold_start=${wam_cold_start}
 /
 EOF
+}
 
-${APRUNC} --time=30:00 ${CHGRES_EXEC} 2>&1 | tee ./chgres_cube_lbc.log > /dev/null
+run_chgres() {
+    local log_file="$1"
+    ${APRUNC} --time=30:00 "${CHGRES_EXEC}" 2>&1 | tee "${log_file}" > /dev/null
 
-mv ${ATM_RUN_DIR}/out.sfc.tile${ATM_TILE}.nc ${ATM_RUN_DIR}/intercom/sfc_data.tile${ATM_TILE}.nc
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        error_exit "chgres_cube failed! Check ${log_file} for details."
+    fi
 
-###########################
-##  Generating IC Files  ##
-###########################
+}
 
-echo "Generating atmosphere IC files"
+# ================================= #
+# Generating SFC Files              #
+# ================================= #
 
-if [ $ATM_ICTYPE = "restart_files" ]; then
+log_info "Generating surface initial condition files..."
+
+if [ "$SFC_ICTYPE" = "restart_files" ]; then
+    convert_atm=.false.
+    convert_sfc=.true.
+    convert_nst=.true.
+    mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
+    orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
+    orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
+    data_dir_input_grid="${ATM_DATA_DIR}/ics"
+    atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
+    atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
+    sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
+    input_type="restart"
+    tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+    tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+else
+    error_exit "Unknown or unsupported SFC input type: ${SFC_ICTYPE}"
+fi
+
+generate_namelist
+run_chgres "./chgres_cube_sfc.log"
+
+mv "${ATM_RUN_DIR}/out.sfc.tile${ATM_TILE}.nc" "${ATM_RUN_DIR}/intercom/sfc_data.tile${ATM_TILE}.nc"
+
+# ================================= #
+# Generating ATM Files              #
+# ================================= #
+
+log_info "Generating atmosphere initial condition files..."
+
+if [ "$ATM_ICTYPE" = "restart_files" ]; then
     convert_atm=.true.
     convert_sfc=.false.
     convert_nst=.false.
@@ -138,6 +176,7 @@ if [ $ATM_ICTYPE = "restart_files" ]; then
     input_type="restart"
     tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
     tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+
 elif [ $ATM_ICTYPE = "grib_files" ]; then
     convert_atm=.true.
     convert_sfc=.false.
@@ -157,82 +196,29 @@ elif [ $ATM_ICTYPE = "grib_files" ]; then
     grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
     atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
     sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-    if [[ -n "$HAFSUTILS_DIR" ]]; then
-        varmap_file="${HAFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    else
-        varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    fi
+    varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
+
 else
-    echo "FATAL ERROR: Unknown or unsupported IC input type ${ATM_ICTYPE}"
-    exit 9
+    error_exit "Unknown or unsupported ATM input type: ${ATM_ICTYPE}"
 fi
 
-# Create namelist and run chgres_cube
-cat>./fort.41<<EOF
-&config
- mosaic_file_target_grid="${mosaic_file_target_grid:-NULL}"
- fix_dir_target_grid="${fix_dir_target_grid:-NULL}"
- orog_dir_target_grid="${orog_dir_target_grid:-NULL}"
- orog_files_target_grid="${orog_files_target_grid:-NULL}"
- vcoord_file_target_grid="${vcoord_file_target_grid:-NULL}"
- mosaic_file_input_grid="${mosaic_file_input_grid:-NULL}"
- orog_dir_input_grid="${orog_dir_input_grid:-NULL}"
- orog_files_input_grid="${orog_files_input_grid:-NULL}"
- data_dir_input_grid="${data_dir_input_grid:-NULL}"
- atm_files_input_grid="${atm_files_input_grid:-NULL}"
- atm_core_files_input_grid="${atm_core_files_input_grid:-NULL}"
- atm_tracer_files_input_grid="${atm_tracer_files_input_grid:-NULL}"
- sfc_files_input_grid="${sfc_files_input_grid:-NULL}"
- nst_files_input_grid="${nst_files_input_grid:-NULL}"
- grib2_file_input_grid="${grib2_file_input_grid:-NULL}"
- geogrid_file_input_grid="${geogrid_file_input_grid:-NULL}"
- varmap_file="${varmap_file:-NULL}"
- wam_parm_file="${warm_parm_file:-NULL}"
- cycle_year=${cycle_year}
- cycle_mon=${cycle_mon}
- cycle_day=${cycle_day}
- cycle_hour=${cycle_hour}
- convert_atm=${convert_atm}
- convert_sfc=${convert_sfc}
- convert_nst=${convert_nst}
- input_type="${input_type}"
- tracers=${tracers}
- tracers_input=${tracers_input}
- regional=${regional}
- halo_bndy=${halo_bndy}
- halo_blend=${halo_blend}
- sotyp_from_climo=${sotyp_from_climo}
- vgtyp_from_climo=${vgtyp_from_climo}
- vgfrc_from_climo=${vgfrc_from_climo}
- minmax_vgfrc_from_climo=${minmax_vgfrc_from_climo}
- tg3_from_soil=${tg3_from_soil}
- lai_from_climo=${lai_from_climo}
- external_model=${external_model}
- nsoill_out=${nsoill_out}
- thomp_mp_climo_file="${thomp_mp_climo_file:-NULL}"
- wam_cold_start=${wam_cold_start}
-/
-EOF
+generate_namelist
+run_chgres "./chgres_cube_atm.log"
 
-${APRUNC} --time=30:00 ${CHGRES_EXEC} 2>&1 | tee ./chgres_cube_lbc.log > /dev/null
+mv "${ATM_RUN_DIR}/gfs_ctrl.nc" "${ATM_RUN_DIR}/intercom/gfs_ctrl.nc"
+mv "${ATM_RUN_DIR}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.000.nc"
+mv "${ATM_RUN_DIR}/out.atm.tile${ATM_TILE}.nc" "${ATM_RUN_DIR}/intercom/gfs_data.tile${ATM_TILE}.nc"
 
-mv ${ATM_RUN_DIR}/gfs_ctrl.nc ${ATM_RUN_DIR}/intercom/gfs_ctrl.nc
-mv ${ATM_RUN_DIR}/gfs.bndy.nc ${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.000.nc
-mv ${ATM_RUN_DIR}/out.atm.tile${ATM_TILE}.nc ${ATM_RUN_DIR}/intercom/gfs_data.tile${ATM_TILE}.nc
+# ================================= #
+# Generating LBC Files              #
+# ================================= #
 
-echo "Atmosphere IC Generation Complete"
-
-############################
-##  Generating LBC Files  ##
-############################
-
-echo "Generating atmosphere LBC files"
+log_info "Generating lateral boundary condition files..."
 
 FHRB=${ATM_NBDYINT}
 FHRE=${NHRS}
 FHRI=${ATM_NBDYINT}
 FHR=${FHRB}
-FHR3=$(printf "%03d" "$FHR")
 
 if [ $ATM_BCTYPE = "grib_files" ]; then
     convert_atm=.true.
@@ -250,81 +236,24 @@ if [ $ATM_BCTYPE = "grib_files" ]; then
     input_type="grib2"
     tracers="sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"
     tracers_input="spfh","clmr","o3mr","icmr","rwmr","snmr","grle"
-    if [[ -n "$HAFSUTILS_DIR" ]]; then
-        varmap_file="${HAFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    else
-        varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    fi
-#elif [ $ATM_ICTYPE = "gfsnetcdf" ]; then
+    varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
 else
-    echo "FATAL ERROR: Unknown or unsupported LBC input type ${ATM_BCTYPE}"
-    exit 9
+    error_exit "Unknown or unsupported LBC input type: ${ATM_BCTYPE}"
 fi
 
-#### START LOOP #####
-while [ $FHR -le $FHRE ]; do
-echo "Generating LBC file for forecast hour ${FHR}"
+while [ "$FHR" -le "$FHRE" ]; do
+    FHR3=$(printf "%03d" "$FHR")
+    log_info "-> Generating LBC file for forecast hour ${FHR3}"
 
-grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
+    grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
+    
+    generate_namelist
+    run_chgres "./chgres_cube_lbc_${FHR3}.log"
 
-# Create namelist and run chgres_cube
-cat>./fort.41<<EOF
- &config
-  fix_dir_target_grid="${fix_dir_target_grid:-NULL}"
-  mosaic_file_target_grid="${mosaic_file_target_grid:-NULL}"
-  orog_dir_target_grid="${orog_dir_target_grid:-NULL}"
-  orog_files_target_grid="${orog_files_target_grid:-NULL}"
-  vcoord_file_target_grid="${vcoord_file_target_grid:-NULL}"
-  mosaic_file_input_grid="${mosaic_file_input_grid:-NULL}"
-  orog_dir_input_grid="${orog_dir_input_grid:-NULL}"
-  orog_files_input_grid="${orog_files_input_grid:-NULL}"
-  data_dir_input_grid="${data_dir_input_grid:-NULL}"
-  atm_files_input_grid="${atm_files_input_grid:-NULL}"
-  atm_core_files_input_grid="${atm_core_files_input_grid:-NULL}"
-  atm_tracer_files_input_grid="${atm_tracer_files_input_grid:-NULL}"
-  sfc_files_input_grid="${sfc_files_input_grid:-NULL}"
-  nst_files_input_grid="${nst_files_input_grid:-NULL}"
-  grib2_file_input_grid="${grib2_file_input_grid:-NULL}"
-  geogrid_file_input_grid="${geogrid_file_input_grid:-NULL}"
-  varmap_file="${varmap_file:-NULL}"
-  wam_parm_file="${warm_parm_file:-NULL}"
-  cycle_year=${cycle_year}
-  cycle_mon=${cycle_mon}
-  cycle_day=${cycle_day}
-  cycle_hour=${cycle_hour}
-  convert_atm=${convert_atm}
-  convert_sfc=${convert_sfc}
-  convert_nst=${convert_nst}
-  input_type="${input_type}"
-  tracers=${tracers}
-  tracers_input=${tracers_input}
-  regional=${regional}
-  halo_bndy=${halo_bndy}
-  halo_blend=${halo_blend}
-  sotyp_from_climo=${sotyp_from_climo}
-  vgtyp_from_climo=${vgtyp_from_climo}
-  vgfrc_from_climo=${vgfrc_from_climo}
-  minmax_vgfrc_from_climo=${minmax_vgfrc_from_climo}
-  tg3_from_soil=${tg3_from_soil}
-  lai_from_climo=${lai_from_climo}
-  external_model=${external_model}
-  nsoill_out=${nsoill_out}
-  thomp_mp_climo_file="${thomp_mp_climo_file:-NULL}"
-  wam_cold_start=${wam_cold_start}
- /
-EOF
+    mv "${ATM_RUN_DIR}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc"
 
-${APRUNC} --time=30:00 ${CHGRES_EXEC} 2>&1 | tee ./chgres_cube_lbc_${FHR3}.log > /dev/null
-
-mv ${ATM_RUN_DIR}/gfs.bndy.nc ${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc
-
-# Go to next forecast out
-FHR=$(($FHR + ${FHRI}))
-FHR3=$(printf "%03d" "$FHR")
-
+    FHR=$(($FHR + ${FHRI}))
 done
-#### END LOOP #####
 
-echo "Atmosphere LBC Generation Complete"
-
-exit
+log_info "Atmosphere prep complete."
+exit 0
