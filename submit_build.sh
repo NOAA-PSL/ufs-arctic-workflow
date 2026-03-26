@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ufs_prep
-#SBATCH --account=ufs-artic     # Edit job account
+#SBATCH --account=ACCOUNT     # Edit job account
 #SBATCH --partition=u1-compute
 #SBATCH --time=30:00
 #SBATCH --nodes=2
@@ -20,8 +20,8 @@ set -eo pipefail
 
 # Current available dates are:
 # 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
-export CDATE=20200227       # Start date in YYYYMMDD format
-export NHRS=12               # Run length in hours (Max: 240)
+export CDATE=20191028       # Start date in YYYYMMDD format
+export NHRS=3               # Run length in hours (Max: 240)
 export ATM_RES='C185'       # Atmospheric resolution: C185 (50km) or C918 (11km)
 
 export SACCT="$SLURM_JOB_ACCOUNT"    # SET THIS IN LINE 3 ABOVE
@@ -29,7 +29,7 @@ export SYSTEM="ursa"        # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
 
 # Location to create run directory (will run in RUN_DIR/JOB_NAME)
-export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/refactor"
+export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
 export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 
 # ================================= #
