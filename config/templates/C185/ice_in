@@ -10,7 +10,7 @@
     ndtd                = 1
     runtype             = 'initial'
     runid               = 'unknown'
-    ice_ic              = 'INPUT/replay_ice.arctic_grid.YEAR-MONTH-DAY-00-10800.nc'
+    ice_ic              = 'INPUT/replay_ice.arctic_grid.YEAR-MONTH-DAY-10800.nc'
     restart             = .true.
     restart_ext         = .false.
     use_restart_time    = .false.

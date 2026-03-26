@@ -1,0 +1,44 @@
+start_year:              YEAR
+start_month:             MONTH
+start_day:               DAY
+start_hour:              3
+start_minute:            0
+start_second:            0
+nhours_fcst:             NHRS
+dt_atmos:                180
+restart_interval:        240
+
+quilting:                .true.
+quilting_restart:        .true.
+write_groups:            1
+write_tasks_per_group:   25
+num_files:               2
+filename_base:           'atm' 'sfc'
+output_file:             'netcdf' 'netcdf'
+write_dopost:            .false.
+ichunk2d:                -1
+jchunk2d:                -1
+ichunk3d:                -1
+jchunk3d:                -1
+kchunk3d:                -1
+ideflate:                0
+zstandard_level:         0
+quantize_mode:           'quantize_bitround'
+quantize_nsd:            0
+
+output_grid:             'cubed_sphere_grid' # cubed_sphere_grid or rotated_latlon
+#Parameters for rotated_latlon
+cen_lon:                  -110.0
+cen_lat:                  83.0
+lon1:                    -50.0
+lat1:                    -33.0
+lon2:                     43.0
+lat2:                     33.0
+dlon:                     0.25
+dlat:                     0.25
+
+output_fh:               3 -1       # Output forecast hours controlled by output_fh (see notes below)
+# a) An array of output_fh means to output history files at those forecast time (e.g., "output_fh: 0 1 2 3 12 24 48")
+#    If the first elelment is zero, it means the first time step output
+# b) If there are two elements in output_fh and the second one is -1, then the first element is output frequency. e.g.
+#    For example, "output_fh: 6 -1" will output the history file every 6 hours.

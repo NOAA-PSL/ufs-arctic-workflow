@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ufs_prep
-#SBATCH --account=ufs-artic
+#SBATCH --account=ufs-artic     # Edit job account
 #SBATCH --partition=u1-compute
 #SBATCH --time=30:00
 #SBATCH --nodes=2
@@ -20,11 +20,11 @@ set -eo pipefail
 
 # Current available dates are:
 # 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
-export CDATE=20191028       # Start date in YYYYMMDD format
+export CDATE=20200227       # Start date in YYYYMMDD format
 export NHRS=3               # Run length in hours (Max: 240)
-export ATM_RES='C185'       # Atmospheric resolution: C185 (50km) or C918 (11km)
+export ATM_RES='C918'       # Atmospheric resolution: C185 (50km) or C918 (11km)
 
-export SACCT="ufs-artic"    # Job submission account
+export SACCT="$SLURM_JOB_ACCOUNT"    # SET THIS IN LINE 3 ABOVE
 export SYSTEM="ursa"        # ursa, hera
 export COMPILER="intelllvm" # gnu, intel, intelllvm
 
@@ -76,16 +76,6 @@ export SCRIPT_DIR="${TOP_DIR}/workflow"
 export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
 export STATUS_DIR="${MODEL_DIR}/.status"
 
-if [[ "$ATM_RES" == "C185" ]]; then
-    NPX=156
-    NPY=126
-elif [[ "$ATM_RES" == "C918" ]]; then
-    NPX=726
-    NPY=576
-else
-    echo "Error: Atmosphere resolution $ATM_RES is invalid.  Valid options: C918, C185." >&2
-    exit 1
-fi
 
 # ================================= #
 # Functions                         #
@@ -117,6 +107,14 @@ compile() {
 
 # Helper function for rendering config files 
 render_template() {
+    if [[ "$ATM_RES" == "C185" ]]; then
+        NPX=156
+        NPY=126
+    elif [[ "$ATM_RES" == "C918" ]]; then
+        NPX=726
+        NPY=576
+    fi
+
     local src="$1"
     local dest="$2"
 
@@ -167,15 +165,15 @@ setup() {
     cp -P "${UFS_DIR}/build/ufs_model" "${MODEL_DIR}/fv3.exe"
 
     # Add fixed config files
-    cp -P ${CONFIG_DIR}/templates/data_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/diag_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/fd_ufs.yaml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/field_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/module-setup.sh ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/noahmptable.tbl ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/ufs.configure ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/input.nml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/MOM_input ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/data_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/diag_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/fd_ufs.yaml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/field_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/module-setup.sh ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/noahmptable.tbl ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/ufs.configure ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/input.nml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/MOM_input ${MODEL_DIR}/.
 
     ln -sf ${ATM_RES}.facsf.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
     ln -sf ${ATM_RES}.slope_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.slope_type.tile1.nc       
@@ -187,11 +185,11 @@ setup() {
     ln -sf ${ATM_RES}.soil_type.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.soil_type.tile1.nc   
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo4.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     
-    render_template "${CONFIG_DIR}/templates/ice_in" "${MODEL_DIR}/ice_in"
-    render_template "${CONFIG_DIR}/templates/diag_table" "${MODEL_DIR}/diag_table"
-    render_template "${CONFIG_DIR}/templates/model_configure" "${MODEL_DIR}/model_configure"
-    render_template "${CONFIG_DIR}/templates/job_card" "${MODEL_DIR}/job_card"
-    render_template "${CONFIG_DIR}/templates/input.nml" "${MODEL_DIR}/input.nml"
+    render_template "${CONFIG_DIR}/templates/${ATM_RES}/ice_in" "${MODEL_DIR}/ice_in"
+    render_template "${CONFIG_DIR}/templates/${ATM_RES}/diag_table" "${MODEL_DIR}/diag_table"
+    render_template "${CONFIG_DIR}/templates/${ATM_RES}/model_configure" "${MODEL_DIR}/model_configure"
+    render_template "${CONFIG_DIR}/templates/${ATM_RES}/job_card" "${MODEL_DIR}/job_card"
+    render_template "${CONFIG_DIR}/templates/${ATM_RES}/input.nml" "${MODEL_DIR}/input.nml"
 
     log_info "Model run directory successfully built at:"
     log_info "--> ${MODEL_DIR}"
