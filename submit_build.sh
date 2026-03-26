@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=ufs_prep
-#SBATCH --account=ACCOUNT     # Edit job account
+#SBATCH --account=ufs-artic # Edit job account
 #SBATCH --partition=u1-compute
 #SBATCH --time=30:00
 #SBATCH --nodes=2
@@ -14,7 +14,7 @@ set -eo pipefail
 #2. Open `submit_build.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
 #3. Run the workflow: 
 #  - `sbatch submit_build.sh`
-#  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the job.
+#  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the model run.
 
 # ================================= #
 # User-adjusted parameters          #

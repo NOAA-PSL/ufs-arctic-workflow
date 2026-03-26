@@ -9,9 +9,10 @@ Ursa
 ----
 1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
 2. Open `submit_build.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
+   Make sure to edit the run account in line 3!
 3. Run the workflow: 
   - `sbatch submit_build.sh`
-  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the job.
+  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the model run.
 
 **Notes**:
 - There are currently a limited number of available dates:
