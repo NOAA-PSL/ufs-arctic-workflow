@@ -10,10 +10,13 @@ set -e -o pipefail
 # Logging & Validation              #
 # ================================= #
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m'
+log_info()  { echo -e "(info) $1"; }
+log_warn()  { echo -e "(Warn) $1"; }
+log_error() { echo -e "[ERROR] $1" >&2; }
+error_exit() {
+    log_error "$1"
+    exit 1
+}
 
 required_vars=(
     "CDATE" "APRUNS" "ICE_RUN_DIR" "ICE_SRC_FILE"
