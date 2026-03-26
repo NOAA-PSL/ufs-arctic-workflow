@@ -11,17 +11,10 @@ set -eo pipefail
 # Logging & Validation              #
 # ================================= #
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m'
-
-log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+log_info()  { echo -e "(info) $1"; }
+log_warn()  { echo -e "(Warn) $1"; }
+log_error() { echo -e "[ERROR] $1" >&2; }
 error_exit() { log_error "$1"; exit 1; }
-
-[[ "$VERBOSE" == "true" ]] && set -x
 
 # Fail-fast validation
 required_vars=(
@@ -79,7 +72,6 @@ link_rtofs_archive() {
         if [[ -e "${prefix}.${ext}" ]]; then
             ${NLN} "${prefix}.${ext}" "archv_in.${ext}"
         elif [[ -e "${prefix}.${ext}.tgz" ]]; then
-            log_info "Extracting ${prefix}.${ext}.tgz..."
             tar -xpvzf "${prefix}.${ext}.tgz"
             ${NLN} "rtofs_glo.t00z.${type}${hr}.archv.${ext}" "archv_in.${ext}"
         else
@@ -94,7 +86,7 @@ generate_weight() {
     local wgt="$3"
 
     if [[ ! -e "$wgt" ]]; then
-        log_info "Creating weight file: ${wgt}"
+        log_info "-> Weight file does not exist: ${wgt}. Generating with ESMF..."
         ${APRUNS} ESMF_RegridWeightGen -s "$src" -d "$dst" -w "$wgt" -m "$METHOD" \
             --dst_loc center --netCDF4 --dst_regional --ignore_degenerate > /dev/null || error_exit "ESMF failed on ${wgt}"
     fi
@@ -104,44 +96,6 @@ generate_weight() {
 # Initial Conditions (IC) Setup     #
 # ================================= #
 
-log_info "Generating Ocean IC files..."
-cd "${OCN_RUN_DIR}/inputs/"
-
-if [[ "$OCNINTYPE" == 'rtofs' ]]; then
-    export CDF038="rtofs_global_ssh_ic.nc"
-    export CDF034="rtofs_global_ts_ic.nc"
-    export CDF033="rtofs_global_uv_ic.nc"
-
-    # Link global RTOFS depth and grid files
-    ${NLN} "${FIXhafs}/fix_mom6/fix_gofs/depth_GLBb0.08_09m11ob.a" regional.depth.a
-    ${NLN} "${FIXhafs}/fix_mom6/fix_gofs/depth_GLBb0.08_09m11ob.b" regional.depth.b
-    ${NLN} "${FIXhafs}/fix_hycom/rtofs_glo.navy_0.08.regional.grid.a" regional.grid.a
-    ${NLN} "${FIXhafs}/fix_hycom/rtofs_glo.navy_0.08.regional.grid.b" regional.grid.b
-
-    link_rtofs_archive "$hour"
-
-    # Run HYCOM-tools executables
-    log_info "Running HYCOM archv2ncdf utilities (IC)..."
-    ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x" < ./rtofs_global_3d_ic.in 2>&1 | tee archv2ncdf3z_3d_ic.log > /dev/null
-    ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x" < ./rtofs_global_ssh_ic.in 2>&1 | tee archv2ncdf2d_ssh_ic.log > /dev/null
-
-    unlink archv_in.a
-    unlink archv_in.b
-fi
-
-# Generate Subgrids
-if [[ ! -e "ocean_subgrid_v.nc" ]] && [[ ! -e "ocean_subgrid_u.nc" ]]; then
-    log_info "U/V subgrid files do not exist. Creating them..."
-    "${OCN_SCRIPT_DIR}/utils/make_subgrids.py" --lat y --lon x --fin ocean_hgrid.nc --out ocean_subgrid
-fi
-
-# Generate Center, U, and V Weights
-generate_weight "${ICFILENAME}" "ocean_mask.nc"      "${WGT_FILE_BASE}_h.nc"
-generate_weight "${ICFILENAME}" "ocean_subgrid_v.nc" "${WGT_FILE_BASE}_v.nc"
-generate_weight "${ICFILENAME}" "ocean_subgrid_u.nc" "${WGT_FILE_BASE}_u.nc"
-
-log_info "Executing Python Remapping for Initial Conditions..."
-
 INPUT_DIR="${OCN_RUN_DIR}/inputs"
 OUTPUT_DIR="${OCN_RUN_DIR}/intercom"
 OUT_FILE_PATH="${OUTPUT_DIR}/${OCN_IC_FILE}"
@@ -150,11 +104,47 @@ DST_VRT_FILE_PATH="${INPUT_DIR}/${OCN_DST_VRT_FILE}"
 H_WGT="${INPUT_DIR}/${WGT_FILE_BASE}_h.nc"
 
 if [ -s "$OUT_FILE_PATH" ]; then
-    log_info "Ocean IC file already exists and is complete. Skipping."
+    log_info "-> Ocean IC file already exists and is complete. Skipping."
 else
+
+    log_info "-> Generating Ocean IC files..."
+    cd "${OCN_RUN_DIR}/inputs/"
+    
+    if [[ "$OCNINTYPE" == 'rtofs' ]]; then
+        export CDF038="rtofs_global_ssh_ic.nc"
+        export CDF034="rtofs_global_ts_ic.nc"
+        export CDF033="rtofs_global_uv_ic.nc"
+    
+        # Link global RTOFS depth and grid files
+        ${NLN} "${FIXhafs}/fix_mom6/fix_gofs/depth_GLBb0.08_09m11ob.a" regional.depth.a
+        ${NLN} "${FIXhafs}/fix_mom6/fix_gofs/depth_GLBb0.08_09m11ob.b" regional.depth.b
+        ${NLN} "${FIXhafs}/fix_hycom/rtofs_glo.navy_0.08.regional.grid.a" regional.grid.a
+        ${NLN} "${FIXhafs}/fix_hycom/rtofs_glo.navy_0.08.regional.grid.b" regional.grid.b
+    
+        link_rtofs_archive "$hour"
+    
+        # Run HYCOM-tools executables
+        log_info "-> Preparing rtofs inputs with HYCOM archv2ncdf utilities .."
+        ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x" < ./rtofs_global_3d_ic.in 2>&1 | tee archv2ncdf3z_3d_ic.log > /dev/null
+        ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x" < ./rtofs_global_ssh_ic.in 2>&1 | tee archv2ncdf2d_ssh_ic.log > /dev/null
+    
+        unlink archv_in.a
+        unlink archv_in.b
+    fi
+    
+    # Generate Subgrids
+    if [[ ! -e "ocean_subgrid_v.nc" ]] && [[ ! -e "ocean_subgrid_u.nc" ]]; then
+        log_info "-> U/V subgrid files do not exist. Creating them..."
+        "${OCN_SCRIPT_DIR}/utils/make_subgrids.py" --lat y --lon x --fin ocean_hgrid.nc --out ocean_subgrid
+    fi
+    
+    # Generate Center, U, and V Weights
+    generate_weight "${ICFILENAME}" "ocean_mask.nc"      "${WGT_FILE_BASE}_h.nc"
+    generate_weight "${ICFILENAME}" "ocean_subgrid_v.nc" "${WGT_FILE_BASE}_v.nc"
+    generate_weight "${ICFILENAME}" "ocean_subgrid_u.nc" "${WGT_FILE_BASE}_u.nc"
+    
     rm -f "$TMP_FILE_PATH"
 
-    log_info "-> Remapping U-V Vectors..."
     ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
         --var_name "${OCN_U_VARNAME}" "${OCN_V_VARNAME}" \
         --src_file "${INPUT_DIR}/${OCN_U_SRC_FILE}" "${INPUT_DIR}/${OCN_V_SRC_FILE}" \
@@ -184,7 +174,6 @@ else
         var_name="${rest%%:*}"
         src_file="${rest#*:}"
     
-        log_info "-> Remapping ${desc} (${var_name})..."
         ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
             --var_name "${var_name}" \
             --src_file "${INPUT_DIR}/${src_file}" \
@@ -195,7 +184,6 @@ else
             --time_name "${OCN_TIME_VARNAME}" || error_exit "${desc} remapping failed."
     done
 
-    log_info "-> Adding ETA variable to IC file..."
     ${APRUNS} python "${OCN_SCRIPT_DIR}/utils/add_eta.py" \
         --file_name "${TMP_FILE_PATH}" \
         --thickness_variable "${OCN_THK_VARNAME}" \
@@ -208,7 +196,7 @@ fi
 # Lateral Boundaries (OBC) Setup    #
 # ================================= #
 
-log_info "Generating Ocean OBC files..."
+log_info "-> Generating Ocean OBC files..."
 cd "${OCN_RUN_DIR}/inputs/"
 
 if [[ "$OCNINTYPE" == 'rtofs' ]]; then
@@ -218,7 +206,7 @@ if [[ "$OCNINTYPE" == 'rtofs' ]]; then
 
     link_rtofs_archive "$hour"
 
-    log_info "Running HYCOM archv2ncdf utilities (OBC)..."
+    log_info "-> Running HYCOM archv2ncdf utilities (OBC)..."
     ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf2d.x" < ./rtofs_global_ssh_obc.in 2>&1 | tee archv2ncdf2d_ssh_obc.log > /dev/null
     ${APRUNS} "${EXEChafs}/hafs_hycom_utils_archv2ncdf3z.x" < ./rtofs_global_3d_obc.in 2>&1 | tee archv2ncdf3z_3d_obc.log > /dev/null
 
@@ -238,7 +226,6 @@ obc_scalars=(
 )
 
 for i in 001 002 003 004; do
-    log_info "=== Processing OBC Boundary ${i} ==="
     
     WGT_FILE="${WGT_FILE_BASE}_${i}.nc"
     WGT_PATH="${INPUT_DIR}/${WGT_FILE}"
@@ -252,12 +239,13 @@ for i in 001 002 003 004; do
         continue
     fi
 
+    log_info "-> Processing OBC Boundary ${i}"
+
     rm -f "$OBC_TMP_PATH"
     
     generate_weight "${BCFILENAME}" "ocean_hgrid_${i}.nc" "${WGT_FILE}"
 
     # --- 1. Remap U-V Vectors ---
-    log_info "-> Remapping OBC U-V Vectors..."
     ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
         --var_name "${OCN_U_VARNAME}" "${OCN_V_VARNAME}" \
         --src_file "${INPUT_DIR}/${OCN_U_SRC_FILE}" "${INPUT_DIR}/${OCN_V_SRC_FILE}" \
@@ -281,7 +269,6 @@ for i in 001 002 003 004; do
         var_name="${rest%%:*}"
         src_file="${rest#*:}"
 
-        log_info "-> Remapping OBC ${desc} (${var_name})..."
         ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
             --var_name "${var_name}" \
             --src_file "${INPUT_DIR}/${src_file}" \
@@ -294,7 +281,6 @@ for i in 001 002 003 004; do
     done
 
     # --- 3. Format NetCDF Files (NCO) ---
-    log_info "-> Reformatting OBC_${i} NetCDF structure..."
     
     # Rename dimensions and variables
     ncrename -O \
@@ -336,5 +322,5 @@ for i in 001 002 003 004; do
     mv "${OBC_TMP_PATH}" "${OBC_OUT_PATH}"
 done
 
-log_info "Ocean Prep complete."
+log_info "-> Ocean Prep complete."
 exit 0

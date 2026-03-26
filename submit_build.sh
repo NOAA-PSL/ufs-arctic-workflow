@@ -21,8 +21,8 @@ set -eo pipefail
 # Current available dates are:
 # 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
 export CDATE=20200227       # Start date in YYYYMMDD format
-export NHRS=3               # Run length in hours (Max: 240)
-export ATM_RES='C918'       # Atmospheric resolution: C185 (50km) or C918 (11km)
+export NHRS=12               # Run length in hours (Max: 240)
+export ATM_RES='C185'       # Atmospheric resolution: C185 (50km) or C918 (11km)
 
 export SACCT="$SLURM_JOB_ACCOUNT"    # SET THIS IN LINE 3 ABOVE
 export SYSTEM="ursa"        # ursa, hera
@@ -36,15 +36,9 @@ export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 # Logging & Error Handling Helpers  #
 # ================================= #
 
-# Define ANSI color codes for terminal output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m' # No Color
-
-log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+log_info()  { echo -e "(info) $1"; }
+log_warn()  { echo -e "(Warn) $1"; }
+log_error() { echo -e "[ERROR] $1" >&2; }
 error_exit() {
     log_error "$1"
     exit 1
@@ -100,7 +94,7 @@ compile() {
         )
         log_info "Compilation Complete"
     else
-        log_info "Skipping compile; UFS executable already exists at: ${UFS_DIR}/build/ufs_model"
+        log_info "Skipping UFS compile; executable already exists at: ${UFS_DIR}/build/ufs_model"
     fi
 }
 
@@ -133,6 +127,8 @@ render_template() {
 
 # Make a new run directory
 setup() {
+    log_info "Populating model run directory in: ${MODEL_DIR}..."
+
     YEAR="${CDATE:0:4}"
     MONTH="${CDATE:4:2}"
     DAY="${CDATE:6:2}"
@@ -191,20 +187,17 @@ setup() {
     render_template "${CONFIG_DIR}/templates/${ATM_RES}/job_card" "${MODEL_DIR}/job_card"
     render_template "${CONFIG_DIR}/templates/${ATM_RES}/input.nml" "${MODEL_DIR}/input.nml"
 
-    log_info "Model run directory successfully built at:"
-    log_info "--> ${MODEL_DIR}"
+    log_info "Model run directory successfully built."
 
 }
 
 prep() {
-    log_info "Preparing input files for run..."
+    log_info "Preparing initial and lateral boundary conditions..."
 
     export PREP_DIR="${MODEL_DIR}/PREP"
     mkdir -p "${PREP_DIR}"
 
     (
-        log_info "Setting up environment and loading modules..."
-
         local NAMELIST_FILE="${CONFIG_DIR}/config.in"
 
         module purge
@@ -218,7 +211,7 @@ prep() {
         [ -f "$CONDA_SH" ] || error_exit "Conda init script not found at: $CONDA_SH"
         source "$CONDA_SH"
         export PATH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/bin:$PATH"
-        conda activate ufs-arctic || error_exit "Failed to activate conda environment: ufs-arctic"
+        conda activate ufs-arctic || error_exit "Failed to activate conda environment: ufs-artic"
         
         source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
 
@@ -229,7 +222,7 @@ prep() {
         # --- Run ocean init ---
         log_info "Starting ocean prep..."
         if [ -f "${STATUS_DIR}/ocn.done" ]; then
-            log_info "Ocean prep already completed. Skipping."
+            log_info "-> Ocean prep already completed. Skipping."
         else 
             mkdir -p "${OCN_RUN_DIR}/intercom"
             (cd ${OCN_SCRIPT_DIR} && ./run_ocn_prep.sh) || error_exit "Ocean prep: run_ocn_prep.sh failed."
@@ -240,7 +233,7 @@ prep() {
         # --- Run ice init ---
         log_info "Starting ice prep..."
         if [ -f "${STATUS_DIR}/ice.done" ]; then
-            log_info "Ice prep already completed. Skipping."
+            log_info "-> Ice prep already completed. Skipping."
         else
             mkdir -p "${ICE_RUN_DIR}/intercom"
             ln -sf "${ICE_SCRIPT_DIR}"/*   "${ICE_RUN_DIR}"/.
@@ -255,7 +248,7 @@ prep() {
         # --- Run atm init ---
         log_info "Starting atmosphere prep..."
         if [ -f "${STATUS_DIR}/atm.done" ]; then
-            log_info "Atmosphere prep already completed. Skipping."
+            log_info "-> Atmosphere prep already completed. Skipping."
         else
             mkdir -p "${ATM_RUN_DIR}/intercom/"
             ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
@@ -265,10 +258,9 @@ prep() {
         fi
     ) || error_exit "Prep script failed."
 
-    log_info "Input file generation complete."
-
-    log_info "Populating INPUT directory with generated files..."
     ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/. || error_exit "Failed to link files from ${PREP_DIR}/intercom to ${MODEL_DIR}/INPUT"
+
+    log_info "Input file generation complete."
 
 }
 
@@ -315,8 +307,7 @@ if [ ! -d "$MODEL_DIR" ]; then
     log_info "Creating new run directory: $MODEL_DIR"
     mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles,.status}
 else
-    log_warn "Run directory already exists in ${MODEL_DIR}."
-    log_warn "Resuming run setup based on existing files."
+    log_warn "Run directory already exists in ${MODEL_DIR}. Resuming run setup based on existing files."
 fi
 
 if [ ! -d "$STATUS_DIR" ]; then

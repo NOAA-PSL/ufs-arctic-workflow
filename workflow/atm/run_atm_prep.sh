@@ -11,23 +11,16 @@ set -eo pipefail
 # Logging & Validation              #
 # ================================= #
 
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly NC='\033[0m'
-
-log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
+log_info()  { echo -e "(info) $1"; }
+log_warn()  { echo -e "(Warn) $1"; }
+log_error() { echo -e "[ERROR] $1" >&2; }
 error_exit() { log_error "$1"; exit 1; }
-
-[[ "$VERBOSE" == "true" ]] && set -x
 
 [[ -z "$CHGRES_EXEC" ]] && error_exit "CHGRES_EXEC is not set."
 [[ -z "$CDATE" ]] && error_exit "CDATE is not set."
 [[ -z "$ATM_RUN_DIR" ]] && error_exit "ATM_RUN_DIR is not set."
 
-log_info "Using chgres_cube at: $CHGRES_EXEC"
+log_info "-> Using chgres_cube at: $CHGRES_EXEC"
 
 module use "${UFSUTILS_DIR}/modulefiles"
 module load "build.${SYSTEM}.intelllvm.lua" || error_exit "Failed to load chgres module."
@@ -131,12 +124,12 @@ run_chgres() {
 # Generating SFC Files              #
 # ================================= #
 
-log_info "Generating surface initial condition files..."
 
 SFC_OUT="${ATM_RUN_DIR}/intercom/sfc_data.tile${ATM_TILE}.nc"
 if [ -s "$SFC_OUT" ]; then
-    log_info "SFC initial condition file already exists. Skipping."
+    log_info "-> Surface IC file already exists. Skipping."
 else
+    log_info "-> Generating surface IC files..."
     if [ "$SFC_ICTYPE" = "restart_files" ]; then
         convert_atm=.false.
         convert_sfc=.true.
@@ -164,13 +157,13 @@ fi
 # Generating ATM Files              #
 # ================================= #
 
-log_info "Generating atmosphere initial condition files..."
 
 ATM_OUT="${ATM_RUN_DIR}/intercom/gfs_data.tile${ATM_TILE}.nc"
 
 if [ -s "$ATM_OUT" ]; then
-    log_info "ATM initial condition files already exist. Skipping."
+    log_info "-> Atmosphere IC files already exist. Skipping."
 else
+    log_info "-> Generating atmosphere IC files..."
     if [ "$ATM_ICTYPE" = "restart_files" ]; then
         convert_atm=.true.
         convert_sfc=.false.
@@ -223,7 +216,7 @@ fi
 # Generating LBC Files              #
 # ================================= #
 
-log_info "Generating lateral boundary condition files..."
+log_info "-> Generating atmosphere LBC files..."
 
 FHRB=${ATM_NBDYINT}
 FHRE=${NHRS}
@@ -256,9 +249,9 @@ while [ "$FHR" -le "$FHRE" ]; do
     LBC_OUT="${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.${FHR3}.nc"
 
     if [ -s "$LBC_OUT" ]; then
-        log_info "-> LBC file for forecast hour ${FHR3} already exists. Skipping."
+        log_info "-> Atmosphere LBC file for forecast hour ${FHR3} already exists. Skipping."
     else
-        log_info "-> Generating LBC file for forecast hour ${FHR3}"
+        log_info "-> Processing LBC at forecast hour ${FHR3}"
     
         grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
         
@@ -271,5 +264,5 @@ while [ "$FHR" -le "$FHRE" ]; do
     FHR=$(($FHR + ${FHRI}))
 done
 
-log_info "Atmosphere prep complete."
+log_info "-> Atmosphere prep complete."
 exit 0
