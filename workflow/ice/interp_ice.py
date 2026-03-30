@@ -36,23 +36,23 @@ def main(args):
     Tmltz = salinz / (-18.48 + (0.01848 * salinz))
 
     # --- Read Source Data ---
-    print(f"Reading source file: {src_file}")
+#    print(f"Reading source file: {src_file}")
     ds_in = xr.open_dataset(src_file)
     vars_to_drop = ['fsnow', 'iage', 'alvl', 'vlvl', 'apnd', 'hpnd', 'ipnd', 'dhs', 'ffrac']
     ds_in = ds_in.drop_vars([v for v in vars_to_drop if v in ds_in])
 
     # --- Rotate vectors (Source Grid -> North-South) ---
-    print("Rotating vectors to N-S...")
+#    print("Rotating vectors to N-S...")
     ang_ds = xr.open_dataset(src_angl)
     angle = get_centers(ang_ds['angle_dx'])
     ds_in['uvel'][:], ds_in['vvel'][:] = rotate(ds_in['uvel'][:], ds_in['vvel'][:], angle, 'grid2NS')
 
     # --- Remap variables ---
-    print(f"Remapping data using weights: {wgt_file}")
+#    print(f"Remapping data using weights: {wgt_file}")
     ds_out = remap(ds_in, wgt_file)
 
     # --- Rotate vectors (North-South -> Target Grid) ---
-    print("Rotating vectors to grid...") 
+#    print("Rotating vectors to grid...") 
     ang_ds = xr.open_dataset(dst_angl)
     angle = get_centers(ang_ds['angle_dx'])
     ds_out['uvel'][:], ds_out['vvel'][:] = rotate(ds_out['uvel'][:], ds_out['vvel'][:], angle, 'NS2grid')
@@ -63,7 +63,7 @@ def main(args):
             ds_out[var][:] = 0
     
     # --- Recompute Enthalpies ---
-    print("Recomputing enthalpies...")
+#    print("Recomputing enthalpies...")
 
     # Snow  enthalpy
     ds_out['qsno001'][:] = -rhos * (Lfresh - cp_ice * ds_out['Tsfcn'][:].values)
@@ -90,7 +90,11 @@ def main(args):
             ds_out[var_name][:] = -rhoi* ( cp_ice*(T_lyr-q2T_fix) + Lfresh*(1-(T_lyr/q2T_fix)) - cp_ocn*T_lyr )
     
     # --- Apply Land Mask & Ice Fractions ---
+<<<<<<< HEAD
+#    print("Applying masks...")
+=======
     print("Applying masks...")
+>>>>>>> main
     ds_kmt = xr.open_dataset(msk_file)
     kmt = np.asarray(ds_kmt[msk_name].values, dtype=float)
 
@@ -104,7 +108,11 @@ def main(args):
             ds_out[var] = xr.where(ds_out['aicen'] > 0, ds_out[var], 0)
 
     # --- Correct Snow Temperature (using Icepack formulas) ---
+<<<<<<< HEAD
+#    print("Correcting snow temperatures...")
+=======
     print("Correcting snow temperatures...")
+>>>>>>> main
     puny_temp = 1.0E-012
     rnslyr = 1.0
     c1 = 1.0
@@ -136,9 +144,15 @@ def main(args):
     ds_out['iceumask'][:] = xr.where(aice > 0.1, 1.0, 0.0)
 
     # --- Save Output ---
+<<<<<<< HEAD
+#    print(f"Writing output to {out_file}...")
+    ds_out.to_netcdf(out_file, unlimited_dims='Time')
+#    print("Interpolation complete.")
+=======
     print(f"Writing output to {out_file}...")
     ds_out.to_netcdf(out_file, unlimited_dims='Time')
     print("Interpolation complete.")
+>>>>>>> main
 
 def remap(ds_in, wgt_file):
     S_mat, dst_dims, nb = unpack(wgt_file)

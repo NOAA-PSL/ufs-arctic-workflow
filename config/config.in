@@ -1,15 +1,12 @@
 #!/bin/sh
 
 # Used globally
-export MAIN_DIR="$(pwd)/../" # Top level directory
-export PREP_DIR="$(pwd)/" # Current run directory
-
 export CDATE="${CDATE}00"
 export CDATEprior=$(date -d "${CDATE:0:8} ${CDATE:8:2} -1 day" +"%Y%m%d%H")
 export NHRS=${NHRS} # Total number of forecast hours
 export SACCT=${SACCT}
 
-export NLN="ln -s"
+export NLN="ln -sf"
 export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 --account=${SACCT}"
 export APRUNC="srun --ntasks=6 --nodes=2 --ntasks-per-node=3 --cpus-per-task=2 --account=${SACCT}"
 
@@ -20,7 +17,7 @@ export OCN_CASE="ARC12"
 export OCN_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${OCN_SRC_GRID_NAME}/"
 export OCN_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${OCN_DST_GRID_NAME}/input_files/"
 export OCN_SRC_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
-export OCN_SCRIPT_DIR="${MAIN_DIR}/workflow/ocn"
+export OCN_SCRIPT_DIR="${TOP_DIR}/workflow/ocn"
 export OCN_RUN_DIR="${PREP_DIR}/ocn"
 export OCNINTYPE='gefs' # Options: rtofs or gefs 
 export OCN_H_WGT_FILE="${OCNINTYPE}2arctic_h.nc"
@@ -74,7 +71,7 @@ export ICEINTYPE='gefs' # Options: rtofs or gefs
 export ICE_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${ICE_SRC_GRID_NAME}/"
 export ICE_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${ICE_DST_GRID_NAME}/input_files/"
 export ICE_INPUT_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
-export ICE_SCRIPT_DIR="${MAIN_DIR}/workflow/ice"
+export ICE_SCRIPT_DIR="${TOP_DIR}/workflow/ice"
 export ICE_RUN_DIR="${PREP_DIR}/ice"
 export ICE_SRC_FILE="Ct.mx025_SCRIP_masked.nc"
 export ICE_DST_FILE="ocean_mask.nc"
@@ -85,7 +82,7 @@ export ICE_DST_ANG_NAME="angle_dx"
 export ICE_DST_ANG_FILE="ocean_hgrid.nc"
 
 # Used by ATM
-export ATM_SCRIPT_DIR="${MAIN_DIR}/workflow/atm"
+export ATM_SCRIPT_DIR="${TOP_DIR}/workflow/atm"
 export ATM_RUN_DIR="${PREP_DIR}/atm"
 export ATM_RES=${ATM_RES:C185}
 export ATM_DATA_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}"
