@@ -72,6 +72,9 @@ export SCRIPT_DIR="${TOP_DIR}/workflow"
 export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
 export STATUS_DIR="${MODEL_DIR}/.status"
 
+conda_env="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/ufs-arctic"
+module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core"
+
 
 # ================================= #
 # Functions                         #
@@ -202,18 +205,6 @@ prep() {
     (
         local NAMELIST_FILE="${CONFIG_DIR}/config.in"
 
-        module purge
-        module purge
-        module use /contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core || error_exit "Failed to find module path /contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core"
-        module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
-        module load nco || error_exit "Failed to load nco module."
-        module load cdo || error_exit "Failed to load cdo module."
-        
-        local CONDA_SH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/etc/profile.d/conda.sh"
-        [ -f "$CONDA_SH" ] || error_exit "Conda init script not found at: $CONDA_SH"
-        source "$CONDA_SH"
-        export PATH="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/miniconda3/bin:$PATH"
-        conda activate ufs-arctic || error_exit "Failed to activate conda environment: ufs-artic"
         
         source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
 
@@ -305,6 +296,15 @@ done
 
 log_info "Starting workflow for Date: $CDATE | Res: $ATM_RES | Length: ${NHRS}h"
 
+module purge
+module use ${module_path} || error_exit "Failed to find module path ${module_path}"
+module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
+module load nco || error_exit "Failed to load nco module."
+module load cdo || error_exit "Failed to load cdo module."
+
+module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
+conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
+
 if [ ! -d "$MODEL_DIR" ]; then
     log_info "Creating new run directory: $MODEL_DIR"
     mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles,.status}
@@ -337,5 +337,7 @@ if [[ "$SUBMIT_JOB" == true ]]; then
 else
     log_warn "Skipping job submission because --norun was specified."
 fi
+
+conda deactivate || error_exit "Failed to deactivate conda environment"
 
 log_info "Workflow script completed successfully. Model directory located at: ${MODEL_DIR}"
