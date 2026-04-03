@@ -145,7 +145,7 @@ else
     
     rm -f "$TMP_FILE_PATH"
 
-    ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
+    ${APRUNS} python "${OCN_SCRIPT_DIR}/run_ocn_prep.py" \
         --var_name "${OCN_U_VARNAME}" "${OCN_V_VARNAME}" \
         --src_file "${INPUT_DIR}/${OCN_U_SRC_FILE}" "${INPUT_DIR}/${OCN_V_SRC_FILE}" \
         --src_ang_name "${OCN_SRC_ANG_NAME}" \
@@ -174,7 +174,7 @@ else
         var_name="${rest%%:*}"
         src_file="${rest#*:}"
     
-        ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
+        ${APRUNS} python "${OCN_SCRIPT_DIR}/run_ocn_prep.py" \
             --var_name "${var_name}" \
             --src_file "${INPUT_DIR}/${src_file}" \
             --wgt_file "${H_WGT}" \
@@ -246,7 +246,7 @@ for i in 001 002 003 004; do
     generate_weight "${BCFILENAME}" "ocean_hgrid_${i}.nc" "${WGT_FILE}"
 
     # --- 1. Remap U-V Vectors ---
-    ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
+    ${APRUNS} python "${OCN_SCRIPT_DIR}/run_ocn_prep.py" \
         --var_name "${OCN_U_VARNAME}" "${OCN_V_VARNAME}" \
         --src_file "${INPUT_DIR}/${OCN_U_SRC_FILE}" "${INPUT_DIR}/${OCN_V_SRC_FILE}" \
         --src_ang_name "${OCN_SRC_ANG_NAME}" \
@@ -269,7 +269,7 @@ for i in 001 002 003 004; do
         var_name="${rest%%:*}"
         src_file="${rest#*:}"
 
-        ${APRUNS} python "${OCN_SCRIPT_DIR}/rtofs_to_mom6.py" \
+        ${APRUNS} python "${OCN_SCRIPT_DIR}/run_ocn_prep.py" \
             --var_name "${var_name}" \
             --src_file "${INPUT_DIR}/${src_file}" \
             --wgt_file "${WGT_PATH}" \

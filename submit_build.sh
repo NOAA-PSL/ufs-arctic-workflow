@@ -58,10 +58,10 @@ if [ -n "$SLURM_SUBMIT_DIR" ]; then
 else
     export TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 fi
-[ -d "$TOP_DIR" ]  || error_exit "build_run.sh script directory not found: $TOP_DIR."
+[ -d "$TOP_DIR" ]  || error_exit "build_run.sh script directory not found: $TOP_DIR"
 
 export UFS_DIR="${TOP_DIR}/ufs-weather-model"
-[ -d "$UFS_DIR" ]  || error_exit "UFS Model directory not found: $UFS_DIR. Did you pull submodules?"
+[ -d "$UFS_DIR" ]  || error_exit "UFS Model directory not found: $UFS_DIR Did you pull submodules?"
 
 export CONFIG_DIR="${TOP_DIR}/config"
 [ -d "$CONFIG_DIR" ] || error_exit "Config directory not found: $CONFIG_DIR"
@@ -129,13 +129,13 @@ render_template() {
 
 # Make a new run directory
 setup() {
-    log_info "Populating model run directory in: ${MODEL_DIR}..."
+    log_info "Populating model run directory in: ${MODEL_DIR} ..."
 
     YEAR="${CDATE:0:4}"
     MONTH="${CDATE:4:2}"
     DAY="${CDATE:6:2}"
 
-    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles} || error_exit "Could not create subdirectories in ${MODEL_DIR}."
+    mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles} || error_exit "Could not create subdirectories in ${MODEL_DIR}"
    
     (
         cd "${MODEL_DIR}/INPUT"
@@ -309,7 +309,7 @@ if [ ! -d "$MODEL_DIR" ]; then
     log_info "Creating new run directory: $MODEL_DIR"
     mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles,.status}
 else
-    log_warn "Run directory already exists in ${MODEL_DIR}. Resuming run setup based on existing files."
+    log_warn "Run directory already exists in ${MODEL_DIR} Resuming run setup based on existing files."
 fi
 
 if [ ! -d "$STATUS_DIR" ]; then
@@ -338,4 +338,4 @@ else
     log_warn "Skipping job submission because --norun was specified."
 fi
 
-log_info "Workflow script completed successfully. Model directory located at: ${MODEL_DIR}."
+log_info "Workflow script completed successfully. Model directory located at: ${MODEL_DIR}"

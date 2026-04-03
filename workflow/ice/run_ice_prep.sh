@@ -71,13 +71,13 @@ else
     # ================================= #
     # Interpolate Ice Data              #
     # ================================= #
-    python interp_ice.py \
+    python run_ice_prep.py \
         --wgt_file "${ICE_WGT_FILE}" \
         --src_file "iced.${yyyy}-${mm}-${dd}-${sssss}.nc" \
         --src_angl "${ICE_SRC_ANG_FILE}" \
         --msk_file "${ICE_DST_FILE}" \
         --dst_angl "${ICE_DST_ANG_FILE}" \
-        --out_file "${OUT_FILE}" || error_exit "interp_ice.py crashed."
+        --out_file "${OUT_FILE}" || error_exit "run_ice_prep.py crashed."
 fi
 
 log_info "-> Ice prep complete."

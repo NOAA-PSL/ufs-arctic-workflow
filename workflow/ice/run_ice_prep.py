@@ -90,11 +90,7 @@ def main(args):
             ds_out[var_name][:] = -rhoi* ( cp_ice*(T_lyr-q2T_fix) + Lfresh*(1-(T_lyr/q2T_fix)) - cp_ocn*T_lyr )
     
     # --- Apply Land Mask & Ice Fractions ---
-<<<<<<< HEAD
 #    print("Applying masks...")
-=======
-    print("Applying masks...")
->>>>>>> main
     ds_kmt = xr.open_dataset(msk_file)
     kmt = np.asarray(ds_kmt[msk_name].values, dtype=float)
 
@@ -108,11 +104,7 @@ def main(args):
             ds_out[var] = xr.where(ds_out['aicen'] > 0, ds_out[var], 0)
 
     # --- Correct Snow Temperature (using Icepack formulas) ---
-<<<<<<< HEAD
 #    print("Correcting snow temperatures...")
-=======
-    print("Correcting snow temperatures...")
->>>>>>> main
     puny_temp = 1.0E-012
     rnslyr = 1.0
     c1 = 1.0
@@ -144,15 +136,9 @@ def main(args):
     ds_out['iceumask'][:] = xr.where(aice > 0.1, 1.0, 0.0)
 
     # --- Save Output ---
-<<<<<<< HEAD
 #    print(f"Writing output to {out_file}...")
     ds_out.to_netcdf(out_file, unlimited_dims='Time')
 #    print("Interpolation complete.")
-=======
-    print(f"Writing output to {out_file}...")
-    ds_out.to_netcdf(out_file, unlimited_dims='Time')
-    print("Interpolation complete.")
->>>>>>> main
 
 def remap(ds_in, wgt_file):
     S_mat, dst_dims, nb = unpack(wgt_file)

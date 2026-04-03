@@ -1,5 +1,5 @@
 """
-Script Name: rtofs_to_mom6.py
+Script Name: run_ocn_prep.py
 Authors: Kristin Barton (kristin.barton@noaa.gov) and UFS Arctic Team
 Last Modified: 1 December 2025
 Description:
