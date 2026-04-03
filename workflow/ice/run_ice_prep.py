@@ -137,7 +137,8 @@ def main(args):
 
     # --- Save Output ---
 #    print(f"Writing output to {out_file}...")
-    ds_out.to_netcdf(out_file, unlimited_dims='Time')
+#    ds_out = ds_out.expand_dims('Time')
+    ds_out.to_netcdf(out_file) #, unlimited_dims='Time')
 #    print("Interpolation complete.")
 
 def remap(ds_in, wgt_file):
