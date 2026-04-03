@@ -35,9 +35,7 @@ Directories
 
 ## Files
 1. `run_init.sh`: This is the primary driver. It will perform the process to generate:
-* Initial Condition files from RTOFS
-* Lateral Boundary Condition files from RTOFS
-* Data atmosphere forcing from GFS
-2. `remap_ICs.sh`: This is the driver for the initial condition remapping steps. It is called by `run_init.sh`
-3. `remap_OBCs.sh`: This is the driver for the lateral boundary condition remapping steps. It is called by `run_init.sh`
-4. `rtofs_to_mom6.py`: This contains the main remapping logic. It is called by the `remap_*.sh` scripts.
+* Initial Condition files from UFS Replay
+* Lateral Boundary Condition files from UFS Replay
+2. `run_ocn_prep.sh`: This is the driver for the initial condition remapping steps. It is called by top driver script `submit_build.sh`
+4. `run_ocn_prep.py`: This contains the main remapping logic. It is called by the `run_ocn_prep.py` scripts.
