@@ -96,7 +96,7 @@ def main(args):
 
     # Set aicen to zero over land and zero out small ice fractions
     ds_out['aicen'] = xr.where(kmt == 1, ds_out['aicen'], 0)
-    ds_out['aicen'] = xr.where(ds_out['aicen'] > 0.1, ds_out['aicen'], 0)
+    ds_out['aicen'] = xr.where(ds_out['aicen'] > 0.001, ds_out['aicen'], 0)
 
     vars_to_zero = ['vicen', 'vsnon'] + [f'qice{l+1:03d}' for l in range(nilyr)]
     for var in vars_to_zero:
