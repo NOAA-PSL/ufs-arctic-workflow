@@ -1,38 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=ufs_prep
-#SBATCH --account=ufs-artic # Edit job account
+# SLURM Defualts: Will be overridden by wrapper script when run
+#SBATCH --account=ufs-artic
+#SBATCH --job-name=ufs_workflow
 #SBATCH --partition=u1-compute
-#SBATCH --time=30:00
+#SBATCH --time=60:00
 #SBATCH --nodes=2
 #SBATCH --ntasks=4
 #SBATCH --output=slurm_%j.log
 
 set -eo pipefail
-
-# To run:
-#1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
-#2. Open `submit_build.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
-#3. Run the workflow: 
-#  - `sbatch submit_build.sh`
-#  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the model run.
-
-# ================================= #
-# User-adjusted parameters          #
-# ================================= #
-
-# Current available dates are:
-# 2019/10/28, 2020/02/27, 2020/07/02, 2020/07/09, 2020/08/27
-export CDATE=20191028       # Start date in YYYYMMDD format
-export NHRS=3               # Run length in hours (Max: 240)
-export ATM_RES='C185'       # Atmospheric resolution: C185 (50km) or C918 (11km)
-
-export SACCT="$SLURM_JOB_ACCOUNT"    # SET THIS IN LINE 3 ABOVE
-export SYSTEM="ursa"        # ursa, hera
-export COMPILER="intelllvm" # gnu, intel, intelllvm
-
-# Location to create run directory (will run in RUN_DIR/JOB_NAME)
-export RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
-export JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 
 # ================================= #
 # Logging & Error Handling Helpers  #
@@ -47,27 +23,112 @@ error_exit() {
 }
 
 # ================================= #
+# Default Parameters & CLI Parsing  #
+# ================================= #
+
+CDATE=""
+NHRS=""
+SACCT="$SLURM_JOB_ACCOUNT"
+ATM_RES=""
+
+RUN_DIR=""
+JOB_NAME=""
+SYSTEM="ursa"
+COMPILER="intelllvm"
+UFS_DIR=""
+
+RUN_STEP="all"
+SUBMIT_JOB=true
+
+help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Required Options:"
+    echo " --date YYYYMMDD      Start date (e.g., 20191028)"
+    echo " --hours N            Run length in hours (Max: 240)"
+    echo " --account NAME       SLURM account to charge"
+    echo " --res RES            Atmospheric resolution (C185 or C918)"
+    echo ""
+    echo "Optional Configuration:"
+    echo " --run-dir PATH       Path to place the workflow output directory"
+    echo "                      Default: /scratch4/BMC/\${SACCT}/\${USER}/stmp"
+    echo " --job-name NAME      Name of the job. Will be used to create run directory."
+    echo "                      Defualt: \${ATM_RES}/_\${CDATE}_\${NHRS}HRS"
+    echo " --system SYS         System name (ursa, hera). Default: ursa"
+    echo " --compiler COMP      Compiler name (gnu, intel, intelllvm). Default: intelllvm"
+    echo " --ufs-dir PATH       Path to an EXISTING compiled UFS model directory."
+    echo "                      If provided, skips compilation and uses this directory."
+    echo ""
+    echo "Workflow Control:"
+    echo " --step STEP          Run only a specific step. Options:"
+    echo "                      all (default), compile, setup, prep_ocn, prep_ice, prep_atm, run"
+    echo " --norun              Setup the entire run directory, but DO NOT submit the final job."
+    echo " -h, --help           Display this help message and exit."
+
+# Parse CLI arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --date) CDATE="$2"; shift 2 ;;
+        --hours) NHRS="$2"; shift 2 ;;
+        --account) SACCT="$2"; shift 2 ;;
+        --res) ATM_RES="$2"; shift 2 ;;
+        --run-dir) RUN_DIR="$2"; shift 2 ;;
+        --job-name) JOB_NAME="$2"; shift 2 ;;
+        --system) SYSTEM="$2"; shift 2 ;;
+        --compiler) COMPILER="$2"; shift 2 ;;
+        --ufs-dir) UFS_DIR="$2"; shift 2 ;;
+        --step) RUN_STEP="$2"; shift 2 ;;
+        --norun) SUBMIT_JOB=false; shift 1 ;;
+        -h|--help) help ;;
+        *) echo "Error: Unknown option '$1'. Use -h or --help for usage." >&2; exit ;;
+    esac
+done
+
+# Validate the required arguments
+if [[ -z "$CDATE" || -z "$NHRS" || -z "$SACCT" || -z "$ATM_RES" ]]; then
+    error_exit "Missing required arguments: --date, --hours, --account, and --res are required. Use --help for more information"
+fi
+
+if [[ -z "$CDATE" ]]; then
+    RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
+fi
+
+if [[-z "$JOB_NAME" ]]; then
+    JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
+fi
+
+# ================================= #
 # System Paths & Validation         #
 # ================================= #
 
 export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
 [ -d "$FIX_DIR" ]  || error_exit "Fix directory not found: $FIX_DIR"
 
-if [ -n "$SLURM_SUBMIT_DIR" ]; then
-    export TOP_DIR="$SLURM_SUBMIT_DIR"
-else
-    export TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-fi
-[ -d "$TOP_DIR" ]  || error_exit "build_run.sh script directory not found: $TOP_DIR"
+export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]})" &> /dev/null && pwd)"
+export TOP_DIR="$(dirname "$SCRIPT_DIR")"
 
-export UFS_DIR="${TOP_DIR}/ufs-weather-model"
-[ -d "$UFS_DIR" ]  || error_exit "UFS Model directory not found: $UFS_DIR Did you pull submodules?"
+[ -d "$TOP_DIR" ] || error_exit "Top directory not found: $TOP_DIR"
+
+# Check for user-supplied pre-compiled UFS directory
+export SKIP_COMPILE=false
+if [[ -n "$UFS_DIR" ]]; then
+    export UFS_DIR="$(realpath "$UFS_DIR")"
+    log_info "Validating user-provided UFS directory: $UFS_DIR"
+
+    [ -d "$UFS_DIR" ] || error_exit "Provided UFS directory does not exist: $UFS_DIR"
+    [ -f "${UFS_DIR}/build/ufs_model" ] || error_exit "Executable missing. Expected at: ${UFS_DIR}/build/ufs_model"
+    [ -d "${UFS_DIR}/modulefiles" ] || error_exit "Modulefiles directory missing: ${UFS_DIR}/modulefiles"
+    [ -f "${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua" ] || error_exit "Missing required modulefile: ufs_${SYSTEM}.${COMPILER}.lua"
+    [ -f "${UFS_DIR}/modulefiles/ufs_common.lua" ] || error_exit "Missing required modulefile: ufs_common.lua"
+
+    SKIP_COMPILE=true
+else
+    export UFS_DIR="${TOP_DIR}/ufs-weather-model" 
+    [ -d "$UFS_DIR" ] || error_exit "Default UFS Model directory not found: $UFS_DIR Did you pull submodules?"
+fi
 
 export CONFIG_DIR="${TOP_DIR}/config"
 [ -d "$CONFIG_DIR" ] || error_exit "Config directory not found: $CONFIG_DIR"
-
-export SCRIPT_DIR="${TOP_DIR}/workflow"
-[ -d "$SCRIPT_DIR" ] || error_exit "Script directory not found: $SCRIPT_DIR"
 
 export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
 export STATUS_DIR="${MODEL_DIR}/.status"
@@ -82,6 +143,11 @@ module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/inst
 
 # Compile model
 compile() {
+    if [[ "$SKIP_COMPILE" == true ]]; then
+        log_info "Skipping UFS compile; using pre-compiled binaries from ${UFS_DIR}"
+        return
+    fi
+
     if [ ! -f "${UFS_DIR}/build/ufs_model" ]; then
         log_info "UFS executable not found. Starting compilation..."
 
@@ -196,65 +262,61 @@ setup() {
 
 }
 
-prep() {
-    log_info "Preparing initial and lateral boundary conditions..."
 
+prep_init() {
     export PREP_DIR="${MODEL_DIR}/PREP"
-    mkdir -p "${PREP_DIR}"
+    mkdir -p "${PREP_DIR}/intercom"
+    mkdir -p "${MODEL_DIR}/INPUT"
+    local NAMELIST_FILE="${CONFIG_DIR}/config.in"
+    source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
+}
 
-    (
-        local NAMELIST_FILE="${CONFIG_DIR}/config.in"
+prep_ocn() {
+    log_info "Starting ocean prep..."
+    if [ -f "${STATUS_DIR}/ocn.done" ]; then
+        log_info "-> Ocean prep already completed. Skipping."
+    else 
+        mkdir -p "${OCN_RUN_DIR}/intercom"
+        (cd ${OCN_SCRIPT_DIR} && ./run_ocn_prep.sh) || error_exit "Ocean prep: run_ocn_prep.sh failed."
+        rsync -a "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        touch "${STATUS_DIR}/ocn.done"
+    fi
 
-        
-        source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
+    ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
+}
 
-        # Preparing file paths
-        cd "${PREP_DIR}"
-        mkdir -p ${PREP_DIR}/intercom
+prep_ice() {
+    prep_init
+    log_info "Starting ice prep..."
+    if [ -f "${STATUS_DIR}/ice.done" ]; then
+        log_info "-> Ice prep already completed. Skipping."
+    else
+        mkdir -p "${ICE_RUN_DIR}/intercom"
+        ln -sf "${ICE_SCRIPT_DIR}"/*   "${ICE_RUN_DIR}"/.
+        ln -sf "${ICE_SRC_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
+        ln -sf "${ICE_DST_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
+        ln -sf "${ICE_INPUT_DIR}"/*    "${ICE_RUN_DIR}"/.
+        (cd "${ICE_RUN_DIR}" && ./run_ice_prep.sh) || error_exit "Ice prep: run_ice_prep.sh failed"
+        rsync -a "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        touch "${STATUS_DIR}/ice.done"
+    fi
 
-        # --- Run ocean init ---
-        log_info "Starting ocean prep..."
-        if [ -f "${STATUS_DIR}/ocn.done" ]; then
-            log_info "-> Ocean prep already completed. Skipping."
-        else 
-            mkdir -p "${OCN_RUN_DIR}/intercom"
-            (cd ${OCN_SCRIPT_DIR} && ./run_ocn_prep.sh) || error_exit "Ocean prep: run_ocn_prep.sh failed."
-            rsync -a "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
-            touch "${STATUS_DIR}/ocn.done"
-        fi
+    ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
+}
 
-        # --- Run ice init ---
-        log_info "Starting ice prep..."
-        if [ -f "${STATUS_DIR}/ice.done" ]; then
-            log_info "-> Ice prep already completed. Skipping."
-        else
-            mkdir -p "${ICE_RUN_DIR}/intercom"
-            ln -sf "${ICE_SCRIPT_DIR}"/*   "${ICE_RUN_DIR}"/.
-            ln -sf "${ICE_SRC_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
-            ln -sf "${ICE_DST_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
-            ln -sf "${ICE_INPUT_DIR}"/*    "${ICE_RUN_DIR}"/.
-            (cd "${ICE_RUN_DIR}" && ./run_ice_prep.sh) || error_exit "Ice prep: run_ice_prep.sh failed"
-            rsync -a "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
-            touch "${STATUS_DIR}/ice.done"
-        fi
+prep_atm() {
+    log_info "Starting atmosphere prep..."
+    if [ -f "${STATUS_DIR}/atm.done" ]; then
+        log_info "-> Atmosphere prep already completed. Skipping."
+    else
+        mkdir -p "${ATM_RUN_DIR}/intercom/"
+        ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
+        (cd ${ATM_RUN_DIR} && ./run_atm_prep.sh) || error_exit "Atmosphere prep: run_atm_prep.sh failed"
+        rsync -a "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        touch "${STATUS_DIR}/atm.done"
+    fi
 
-        # --- Run atm init ---
-        log_info "Starting atmosphere prep..."
-        if [ -f "${STATUS_DIR}/atm.done" ]; then
-            log_info "-> Atmosphere prep already completed. Skipping."
-        else
-            mkdir -p "${ATM_RUN_DIR}/intercom/"
-            ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
-            (cd ${ATM_RUN_DIR} && ./run_atm_prep.sh) || error_exit "Atmosphere prep: run_atm_prep.sh failed"
-            rsync -a "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
-            touch "${STATUS_DIR}/atm.done"
-        fi
-    ) || error_exit "Prep script failed."
-
-    ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/. || error_exit "Failed to link files from ${PREP_DIR}/intercom to ${MODEL_DIR}/INPUT"
-
-    log_info "Input file generation complete."
-
+    ln -sf "${PREP_DIR}"/intercom/* "${MODEL_DIR}"/INPUT/.
 }
 
 run_model() {
@@ -275,25 +337,6 @@ help() {
 # Main Execution Logic              #
 # ================================= #
 
-SUBMIT_JOB=true
-export VERBOSE="false"
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --norun)
-      SUBMIT_JOB=false
-      shift
-      ;;
-    -h|--help)
-      help
-      ;;
-    *)
-      echo "Error: Unknown option '$1'. Use -h or --help for usage." >&2
-      help
-      ;;
-  esac
-done
-
 log_info "Starting workflow for Date: $CDATE | Res: $ATM_RES | Length: ${NHRS}h"
 
 module purge
@@ -301,7 +344,6 @@ module use ${module_path} || error_exit "Failed to find module path ${module_pat
 module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
 module load nco || error_exit "Failed to load nco module."
 module load cdo || error_exit "Failed to load cdo module."
-
 module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
 conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
 
@@ -312,32 +354,32 @@ else
     log_warn "Run directory already exists in ${MODEL_DIR} Resuming run setup based on existing files."
 fi
 
-if [ ! -d "$STATUS_DIR" ]; then
-    mkdir -p "$STATUS_DIR"
+mkdir -p "$STATUS_DIR"
+
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "compile" ]]; then
+    compile
 fi
 
-compile
-
-if [ ! -f "${STATUS_DIR}/setup.done" ]; then
-    setup
-    touch "${STATUS_DIR}/setup.done"
-else
-    log_info "Setup phase already completed. Skipping."
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "setup" ]]; then
+    if [ ! -f "${STATUS_DIR}/setup.done" ]; then
+        setup
+        touch "${STATUS_DIR}/setup.done"
+    else
+        log_info "Setup phase already completed. Skipping."
+    fi
 fi
 
-if [ ! -f "${STATUS_DIR}/prep.done" ]; then
-    prep
-    touch "${STATUS_DIR}/prep.done"
-else
-    log_info "Prep phase already completed. Skipping."
-fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_ocn" ]]; then prep_ocn; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_ice" ]]; then prep_ice; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_atm" ]]; then prep_atm; fi
 
-if [[ "$SUBMIT_JOB" == true ]]; then
-    run_model
-else
-    log_warn "Skipping job submission because --norun was specified."
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "run" ]]; then
+    if [[ "$SUBMIT_JOB" == true ]]; then
+        run_model
+    else
+        log_warn "Skipping job submission because --norun was specified."
+    fi
 fi
 
 conda deactivate || error_exit "Failed to deactivate conda environment"
-
 log_info "Workflow script completed successfully. Model directory located at: ${MODEL_DIR}"
