@@ -14,11 +14,12 @@ Ursa
 4. Execute the workflow script: 
     `.\batch_submit.sh`
 
-(*Optional*) If you have a seperate, pre-compiled UFS directory you would like to work from,
+(*Optional*) If you have an existing, pre-compiled UFS directory you would like to work from,
 you can skip the compile step and specify the directory directly in `batch_submit.sh`.
-However, note that configure options and settings may not be compatible with other UFS executables.
+***Note:*** The supplied directory **must** contain `build/ufs_model` and a populated `modulefiles`.
+***Note:*** Configure options and settings may not be compatible with other UFS executables!!
 
-**Notes**:
+*More information*:
 - There are currently a limited number of available dates:
     - 2019/10/28
     - 2020/02/27
