@@ -1,12 +1,11 @@
 #!/bin/bash
 # SLURM Defualts: Will be overridden by wrapper script when run
-#SBATCH --account=ufs-artic
 #SBATCH --job-name=ufs_workflow
 #SBATCH --partition=u1-compute
 #SBATCH --time=60:00
 #SBATCH --nodes=2
 #SBATCH --ntasks=4
-#SBATCH --output=slurm_%j.log
+#SBATCH --output=slurm_prep_%j.log
 
 set -eo pipefail
 
@@ -26,16 +25,17 @@ error_exit() {
 # Default Parameters & CLI Parsing  #
 # ================================= #
 
-CDATE=""
-NHRS=""
-SACCT="$SLURM_JOB_ACCOUNT"
-ATM_RES=""
+export CDATE=""
+export NHRS=""
+export SACCT="$SLURM_JOB_ACCOUNT"
+export ATM_RES=""
 
 RUN_DIR=""
 JOB_NAME=""
-SYSTEM="ursa"
-COMPILER="intelllvm"
-UFS_DIR=""
+
+export SYSTEM="ursa"
+export COMPILER="intelllvm"
+export UFS_DIR=""
 
 RUN_STEP="all"
 SUBMIT_JOB=true
@@ -46,7 +46,6 @@ help() {
     echo "Required Options:"
     echo " --date YYYYMMDD      Start date (e.g., 20191028)"
     echo " --hours N            Run length in hours (Max: 240)"
-    echo " --account NAME       SLURM account to charge"
     echo " --res RES            Atmospheric resolution (C185 or C918)"
     echo ""
     echo "Optional Configuration:"
@@ -64,19 +63,19 @@ help() {
     echo "                      all (default), compile, setup, prep_ocn, prep_ice, prep_atm, run"
     echo " --norun              Setup the entire run directory, but DO NOT submit the final job."
     echo " -h, --help           Display this help message and exit."
+}
 
 # Parse CLI arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --date) CDATE="$2"; shift 2 ;;
-        --hours) NHRS="$2"; shift 2 ;;
-        --account) SACCT="$2"; shift 2 ;;
-        --res) ATM_RES="$2"; shift 2 ;;
+        --date) export CDATE="$2"; shift 2 ;;
+        --hours) export NHRS="$2"; shift 2 ;;
+        --res) export ATM_RES="$2"; shift 2 ;;
         --run-dir) RUN_DIR="$2"; shift 2 ;;
         --job-name) JOB_NAME="$2"; shift 2 ;;
-        --system) SYSTEM="$2"; shift 2 ;;
-        --compiler) COMPILER="$2"; shift 2 ;;
-        --ufs-dir) UFS_DIR="$2"; shift 2 ;;
+        --system) export SYSTEM="$2"; shift 2 ;;
+        --compiler) export COMPILER="$2"; shift 2 ;;
+        --ufs-dir) export UFS_DIR="$2"; shift 2 ;;
         --step) RUN_STEP="$2"; shift 2 ;;
         --norun) SUBMIT_JOB=false; shift 1 ;;
         -h|--help) help ;;
@@ -85,15 +84,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate the required arguments
-if [[ -z "$CDATE" || -z "$NHRS" || -z "$SACCT" || -z "$ATM_RES" ]]; then
+if [[ -z "$CDATE" || -z "$NHRS" || -z "$ATM_RES" ]]; then
     error_exit "Missing required arguments: --date, --hours, --account, and --res are required. Use --help for more information"
 fi
 
-if [[ -z "$CDATE" ]]; then
+if [[ -z "$RUN_DIR" ]]; then
     RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp"
 fi
 
-if [[-z "$JOB_NAME" ]]; then
+if [[ -z "$JOB_NAME" ]]; then
     JOB_NAME="${ATM_RES}_${CDATE}_${NHRS}HRS"
 fi
 
@@ -101,35 +100,21 @@ fi
 # System Paths & Validation         #
 # ================================= #
 
-export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
-[ -d "$FIX_DIR" ]  || error_exit "Fix directory not found: $FIX_DIR"
-
-export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]})" &> /dev/null && pwd)"
-export TOP_DIR="$(dirname "$SCRIPT_DIR")"
+if [[ -n "$SLURM_SUBMIT_DIR" ]]; then
+    if [[ "$(basename "$SLURM_SUBMIT_DIR")" == "workflow" ]]; then
+        export TOP_DIR="$(dirname "$SLURM_SUBMIT_DIR")"
+    else
+        export TOP_DIR="$SLURM_SUBMIT_DIR"
+    fi
+else
+    export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+    export TOP_DIR="$(dirname "$SCRIPT_DIR")"
+fi
 
 [ -d "$TOP_DIR" ] || error_exit "Top directory not found: $TOP_DIR"
 
-# Check for user-supplied pre-compiled UFS directory
-export SKIP_COMPILE=false
-if [[ -n "$UFS_DIR" ]]; then
-    export UFS_DIR="$(realpath "$UFS_DIR")"
-    log_info "Validating user-provided UFS directory: $UFS_DIR"
-
-    [ -d "$UFS_DIR" ] || error_exit "Provided UFS directory does not exist: $UFS_DIR"
-    [ -f "${UFS_DIR}/build/ufs_model" ] || error_exit "Executable missing. Expected at: ${UFS_DIR}/build/ufs_model"
-    [ -d "${UFS_DIR}/modulefiles" ] || error_exit "Modulefiles directory missing: ${UFS_DIR}/modulefiles"
-    [ -f "${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua" ] || error_exit "Missing required modulefile: ufs_${SYSTEM}.${COMPILER}.lua"
-    [ -f "${UFS_DIR}/modulefiles/ufs_common.lua" ] || error_exit "Missing required modulefile: ufs_common.lua"
-
-    SKIP_COMPILE=true
-else
-    export UFS_DIR="${TOP_DIR}/ufs-weather-model" 
-    [ -d "$UFS_DIR" ] || error_exit "Default UFS Model directory not found: $UFS_DIR Did you pull submodules?"
-fi
-
+export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
 export CONFIG_DIR="${TOP_DIR}/config"
-[ -d "$CONFIG_DIR" ] || error_exit "Config directory not found: $CONFIG_DIR"
-
 export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
 export STATUS_DIR="${MODEL_DIR}/.status"
 
@@ -140,35 +125,6 @@ module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/inst
 # ================================= #
 # Functions                         #
 # ================================= #
-
-# Compile model
-compile() {
-    if [[ "$SKIP_COMPILE" == true ]]; then
-        log_info "Skipping UFS compile; using pre-compiled binaries from ${UFS_DIR}"
-        return
-    fi
-
-    if [ ! -f "${UFS_DIR}/build/ufs_model" ]; then
-        log_info "UFS executable not found. Starting compilation..."
-
-        if [ -d "${UFS_DIR}/build" ]; then
-            log_warn "Existing build directory found. Running 'make clean'..."
-            (cd "${UFS_DIR}/build" && make clean)
-        fi
-
-        (
-            cd "${UFS_DIR}"
-            module use modulefiles || error_exit "Failed to find modulefiles."
-            module load "ufs_${SYSTEM}.${COMPILER}.lua" || error_exit "Failed to load module: ufs_${SYSTEM}.${COMPILER}.lua. Did you run: git submodule update --init --recursive ?"
-            log_info "Running CMake and build scripts..."
-            CMAKE_FLAGS="-DDEBUG=OFF -DAPP=S2S -DREGIONAL_MOM6=ON -DMOVING_NEST=OFF -DCCPP_SUITES=FV3_GFS_v17_coupled_p8_ugwpv1" ./build.sh
-        )
-        log_info "Compilation Complete"
-    else
-        log_info "Skipping UFS compile; executable already exists at: ${UFS_DIR}/build/ufs_model"
-    fi
-}
-
 
 # Helper function for rendering config files 
 render_template() {
@@ -229,7 +185,14 @@ setup() {
 
     cp -P "${UFS_DIR}/modulefiles/ufs_${SYSTEM}.${COMPILER}.lua" "${MODEL_DIR}/modulefiles/modules.fv3.lua"
     cp -P "${UFS_DIR}/modulefiles/ufs_common.lua" "${MODEL_DIR}/modulefiles/"
-    cp -P "${UFS_DIR}/build/ufs_model" "${MODEL_DIR}/fv3.exe"
+    ln -sf "${UFS_DIR}/build/ufs_model" "${MODEL_DIR}/fv3.exe"
+
+    if [ -f "${UFS_DIR}/build/build_metadata.txt" ]; then
+        cp -P "${UFS_DIR}/build/build_metadata.txt" "${MODEL_DIR}/ufs_build_metadata.txt"
+    else
+        echo "Source Executable: ${UFS_DIR}/build/ufs_model" > "${MODEL_DIR}/fv3_build_metadata.txt"
+        echo "Note: Provided executable directory did not contain build metadata." >> "${MODEL_DIR}/fv3_build_metadata.txt"
+    fi
 
     # Add fixed config files
     cp -P ${CONFIG_DIR}/templates/${ATM_RES}/data_table ${MODEL_DIR}/.
@@ -262,7 +225,6 @@ setup() {
 
 }
 
-
 prep_init() {
     export PREP_DIR="${MODEL_DIR}/PREP"
     mkdir -p "${PREP_DIR}/intercom"
@@ -278,7 +240,7 @@ prep_ocn() {
     else 
         mkdir -p "${OCN_RUN_DIR}/intercom"
         (cd ${OCN_SCRIPT_DIR} && ./run_ocn_prep.sh) || error_exit "Ocean prep: run_ocn_prep.sh failed."
-        rsync -a "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        mv "${OCN_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
         touch "${STATUS_DIR}/ocn.done"
     fi
 
@@ -286,7 +248,6 @@ prep_ocn() {
 }
 
 prep_ice() {
-    prep_init
     log_info "Starting ice prep..."
     if [ -f "${STATUS_DIR}/ice.done" ]; then
         log_info "-> Ice prep already completed. Skipping."
@@ -297,7 +258,7 @@ prep_ice() {
         ln -sf "${ICE_DST_GRID_DIR}"/* "${ICE_RUN_DIR}"/.
         ln -sf "${ICE_INPUT_DIR}"/*    "${ICE_RUN_DIR}"/.
         (cd "${ICE_RUN_DIR}" && ./run_ice_prep.sh) || error_exit "Ice prep: run_ice_prep.sh failed"
-        rsync -a "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        mv "${ICE_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
         touch "${STATUS_DIR}/ice.done"
     fi
 
@@ -312,7 +273,7 @@ prep_atm() {
         mkdir -p "${ATM_RUN_DIR}/intercom/"
         ln -sf "${ATM_SCRIPT_DIR}"/* "${ATM_RUN_DIR}/."
         (cd ${ATM_RUN_DIR} && ./run_atm_prep.sh) || error_exit "Atmosphere prep: run_atm_prep.sh failed"
-        rsync -a "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
+        mv "${ATM_RUN_DIR}"/intercom/*.nc "${PREP_DIR}"/intercom/.
         touch "${STATUS_DIR}/atm.done"
     fi
 
@@ -322,15 +283,6 @@ prep_atm() {
 run_model() {
     log_info "Submitting model run..."
     (cd "${MODEL_DIR}" && sbatch job_card) || error_exit "Job submission failed."
-}
-
-help() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --norun        Setup the run directory without submitting the job to the scheduler."
-    echo "  -h, --help     Display this help message and exit."
-    exit 0
 }
 
 # ================================= #
@@ -356,10 +308,6 @@ fi
 
 mkdir -p "$STATUS_DIR"
 
-if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "compile" ]]; then
-    compile
-fi
-
 if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "setup" ]]; then
     if [ ! -f "${STATUS_DIR}/setup.done" ]; then
         setup
@@ -369,9 +317,10 @@ if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "setup" ]]; then
     fi
 fi
 
-if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_ocn" ]]; then prep_ocn; fi
-if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_ice" ]]; then prep_ice; fi
-if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep_atm" ]]; then prep_atm; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep" || "$RUN_STEP" == "prep_ocn" || "$RUN_STEP" == "prep_ice" || "$RUN_STEP" == "prep_atm" ]]; then prep_init; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep" || "$RUN_STEP" == "prep_ocn" ]]; then prep_ocn; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep" || "$RUN_STEP" == "prep_ice" ]]; then prep_ice; fi
+if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "prep" || "$RUN_STEP" == "prep_atm" ]]; then prep_atm; fi
 
 if [[ "$RUN_STEP" == "all" || "$RUN_STEP" == "run" ]]; then
     if [[ "$SUBMIT_JOB" == true ]]; then

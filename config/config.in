@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Used globally
-export CDATE="${CDATE}00"
+export CDATE="${CDATE}"
 export CDATEprior=$(date -d "${CDATE:0:8} ${CDATE:8:2} -1 day" +"%Y%m%d%H")
 export NHRS=${NHRS} # Total number of forecast hours
 export SACCT=${SACCT}
@@ -16,7 +16,7 @@ export OCN_DST_GRID_NAME="ARC12"
 export OCN_CASE="ARC12"
 export OCN_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${OCN_SRC_GRID_NAME}/"
 export OCN_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${OCN_DST_GRID_NAME}/input_files/"
-export OCN_SRC_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
+export OCN_SRC_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}00/ics/"
 export OCN_SCRIPT_DIR="${TOP_DIR}/workflow/ocn"
 export OCN_RUN_DIR="${PREP_DIR}/ocn"
 export OCNINTYPE='gefs' # Options: rtofs or gefs 
@@ -70,7 +70,7 @@ export ICEINTYPE='gefs' # Options: rtofs or gefs
 
 export ICE_SRC_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${ICE_SRC_GRID_NAME}/"
 export ICE_DST_GRID_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/mesh_files/${ICE_DST_GRID_NAME}/input_files/"
-export ICE_INPUT_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}/ics/"
+export ICE_INPUT_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}00/ics/"
 export ICE_SCRIPT_DIR="${TOP_DIR}/workflow/ice"
 export ICE_RUN_DIR="${PREP_DIR}/ice"
 export ICE_SRC_FILE="Ct.mx025_SCRIP_masked.nc"
@@ -85,7 +85,7 @@ export ICE_DST_ANG_FILE="ocean_hgrid.nc"
 export ATM_SCRIPT_DIR="${TOP_DIR}/workflow/atm"
 export ATM_RUN_DIR="${PREP_DIR}/atm"
 export ATM_RES=${ATM_RES:C185}
-export ATM_DATA_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}"
+export ATM_DATA_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/input_data/GEFSv13-reforecasts/${CDATE}00"
 export ATM_TILE=7
 export ATM_LEVS=128
 export ATM_REGIONAL=1

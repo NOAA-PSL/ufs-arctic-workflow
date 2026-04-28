@@ -5,10 +5,18 @@ Quick Start Guide
 
 Ursa 
 ----
-1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
-2. Open the wrapper script `batch_submit.sh` to configure your experiment(s). Adjust the SLURM account, run length (hours), resolution, and dates to run.
-3. Execute the bash script: `.\batch_submit.sh`
-   Make sure to edit the run account in line 3!
+1. Clone the workflow and then update submodules: 
+    `git submodule update --init --recursive`
+2. Compile the UFS model:
+    `sbatch --account <job-account> compile_ufs.sh`
+3. Open the wrapper script `run_workflow.sh` to configure your experiment(s).
+   Adjust the slurm account, run length, resolution, dates, etc.
+4. Execute the workflow script: 
+    `.\batch_submit.sh`
+
+(*Optional*) If you have a seperate, pre-compiled UFS directory you would like to work from,
+you can skip the compile step and specify the directory directly in `batch_submit.sh`.
+However, note that configure options and settings may not be compatible with other UFS executables.
 
 **Notes**:
 - There are currently a limited number of available dates:
