@@ -97,5 +97,5 @@ export SFC_ICTYPE="restart_files"
 export ATM_ICTYPE="grib_files" 
 export ATM_BCTYPE="grib_files"
 export ATM_NBDYINT=3 # Boundary input interval in hours
-export CHGRES_EXEC="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/ufs-community/UFS_UTILS/build/exec/chgres_cube"
 export UFSUTILS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/ufs-community/UFS_UTILS/build"
+export CHGRES_EXEC="$UFSUTILS_DIR/exec/chgres_cube"
