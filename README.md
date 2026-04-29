@@ -12,12 +12,12 @@ Ursa
 3. Open the wrapper script `run_workflow.sh` to configure your experiment(s).
    Adjust the slurm account, run length, resolution, dates, etc.
 4. Execute the workflow script: 
-    `.\batch_submit.sh`
+    `.\run_workflow.sh`
 
 (*Optional*) If you have an existing, pre-compiled UFS directory you would like to work from,
-you can skip the compile step and specify the directory directly in `batch_submit.sh`.
+you can skip the compile step and specify the directory directly in `run_workflow.sh`.
 ***Note:*** The supplied directory **must** contain `build/ufs_model` and a populated `modulefiles`.
-***Note:*** Configure options and settings may not be compatible with other UFS executables!!
+***Note:*** Configure options and settings may not be compatible with other UFS executables!
 
 *More information*:
 - There are currently a limited number of available dates:
