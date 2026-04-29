@@ -44,7 +44,7 @@ for r in "${RES[@]}"; do
     echo ">> Configuring run for date: $d | Hours: $HOURS | Resolution: $r | Acct: $SACCT"
 
     # Edit this as well if desired. Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
-    JOB_NAME="${RES}_${d}_${HOURS}HRS"
+    JOB_NAME="${r}_${d}_${HOURS}HRS"
 
     CMD=(
         "sbatch"
