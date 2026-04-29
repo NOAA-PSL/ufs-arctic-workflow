@@ -6,7 +6,10 @@
 
 SACCT="ufs-artic"       # Account for job submission
 HOURS=3                 # Model forecast length (Max: 240 Hours)
-RES="C185"              # Model resolution (C918: ~11km; C185: ~50km)
+RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
+#    "C918"
+    "C185"
+)
 DATES=(                 # Format: YYYYMMDD
     "20191028"          # Options: 20191028 | 20200227 | 20200702 | 20200709 | 20200827
 #    "20200227"
@@ -18,7 +21,7 @@ DATES=(                 # Format: YYYYMMDD
 UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C5203a784/ufs-weather-model/"              
 #UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/dev" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/2mtmp_tests" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #
@@ -37,7 +40,8 @@ echo "Starting batch submission..."
 SCRIPT="./workflow/submit_workflow.sh"
 
 for d in "${DATES[@]}"; do
-    echo ">> Configuring run for date: $d | Hours: $HOURS | Resolution: $RES | Acct: $SACCT"
+for r in "${RES[@]}"; do
+    echo ">> Configuring run for date: $d | Hours: $HOURS | Resolution: $r | Acct: $SACCT"
 
     # Edit this as well if desired. Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
     JOB_NAME="${RES}_${d}_${HOURS}HRS"
@@ -53,7 +57,7 @@ for d in "${DATES[@]}"; do
         "$SCRIPT"
         "--date" "$d"
         "--hours" "$HOURS"
-        "--res" "$RES"
+        "--res" "$r"
         "--run-dir" "$BASE_RUN_DIR"
         "--job-name" "$JOB_NAME")
 
@@ -62,9 +66,10 @@ for d in "${DATES[@]}"; do
     fi
 
     # Uncomment this if you want to prep the model run WITHOUT submitting the final job
-    CMD+=("--norun")
+    #CMD+=("--norun")
 
     "${CMD[@]}"
 
     sleep 1
+#done
 done
