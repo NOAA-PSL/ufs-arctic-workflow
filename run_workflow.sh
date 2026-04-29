@@ -21,7 +21,7 @@ DATES=(                 # Format: YYYYMMDD
 #UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C5203a784/ufs-weather-model/"              
 UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/2mtmp_tests" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #
