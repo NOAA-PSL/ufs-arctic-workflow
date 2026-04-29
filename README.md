@@ -5,14 +5,25 @@ Quick Start Guide
 
 Ursa 
 ----
-1. Clone the workflow and then update submodules: `git submodule update --init --recursive`
-2. Open `submit_build.sh` and adjust the test run start date, run length, account, system, compiler, and run directory as needed.
-   Make sure to edit the run account in line 3!
-3. Run the workflow: 
-  - `sbatch submit_build.sh`
-  - `sbatch submit_build.sh --norun` to setup the run directoy without submitting the model run.
+1. Clone the workflow and then update submodules: 
+    `git submodule update --init --recursive`
+2. Compile the UFS model:
+    `sbatch --account <job-account> compile_ufs.sh`
+3. Open the wrapper script `run_workflow.sh` to configure your experiment(s).
+   Adjust the slurm account, run length, resolution, dates, etc.
+4. Execute the workflow script: 
+    `.\run_workflow.sh`
+Run workflow provides a template for setting up and running multiple experiments at once.
+5. Alternatively, you can call the batch submission directly from the command line:
+    `sbatch <sbatch_options> ./workflow/submit_workflow.sh --date <YYYYMMDD> --hours <NHRS> --res <CRES> --run-dir </PATH/TO/OUTPUT/DIR> --job-name <JOB_NAME>`
 
-**Notes**:
+
+(*Optional*) If you have an existing, pre-compiled UFS directory you would like to work from,
+you can skip the compile step and specify the directory directly in `run_workflow.sh`.
+***Note:*** The supplied directory **must** contain `build/ufs_model` and a populated `modulefiles`.
+***Note:*** Configure options and settings may not be compatible with other UFS executables!
+
+*More information*:
 - There are currently a limited number of available dates:
     - 2019/10/28
     - 2020/02/27
