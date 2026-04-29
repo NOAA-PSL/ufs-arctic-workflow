@@ -13,6 +13,10 @@ Ursa
    Adjust the slurm account, run length, resolution, dates, etc.
 4. Execute the workflow script: 
     `.\run_workflow.sh`
+Run workflow provides a template for setting up and running multiple experiments at once.
+5. Alternatively, you can call the batch submission directly from the command line:
+    `sbatch <sbatch_options> ./workflow/submit_workflow.sh --date <YYYYMMDD> --hours <NHRS> --res <CRES> --run-dir </PATH/TO/OUTPUT/DIR> --job-name <JOB_NAME>`
+
 
 (*Optional*) If you have an existing, pre-compiled UFS directory you would like to work from,
 you can skip the compile step and specify the directory directly in `run_workflow.sh`.
