@@ -252,7 +252,7 @@
   do_shum      = .false.
   do_skeb      = .false.
   use_med_flux = .false.
-  frac_grid    = .false.
+  frac_grid    = .true.
   cplchm       = .false.
   cplflx       = .true.
   cplice       = .true.
