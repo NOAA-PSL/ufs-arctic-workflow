@@ -9,14 +9,14 @@ Ursa
     `git submodule update --init --recursive`
 2. Compile the UFS model:
     `sbatch --account <job-account> compile_ufs.sh`
-3. Open the wrapper script `run_workflow.sh` to configure your experiment(s).
+3. Open the wrapper script `submit_workflow.sh` to configure your experiment(s).
    Adjust the slurm account, run length, resolution, dates, etc.
 4. Execute the workflow script: 
-    `./run_workflow.sh`
+    `./submit_workflow.sh`
 Run workflow provides a template for setting up and running multiple experiments at once.
 
 (5. Alternatively, you can call the batch submission directly from the command line:
-    `sbatch <sbatch_options> ./workflow/submit_workflow.sh --date <YYYYMMDD> --hours <NHRS> --res <CRES> --run-dir </PATH/TO/OUTPUT/DIR> --job-name <JOB_NAME>`)
+    `sbatch <sbatch_options> ./workflow/run_workflow.sh --date <YYYYMMDD> --hours <NHRS> --res <CRES> --run-dir </PATH/TO/OUTPUT/DIR> --job-name <JOB_NAME>`)
 
 
 (*Optional*) If you have an existing, pre-compiled UFS directory you would like to work from,

@@ -7,8 +7,8 @@ export NHRS=${NHRS} # Total number of forecast hours
 export SACCT=${SACCT}
 
 export NLN="ln -sf"
-export APRUNS="srun --ntasks=1 --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 --account=${SACCT}"
-export APRUNC="srun --ntasks=6 --nodes=2 --ntasks-per-node=3 --cpus-per-task=2 --account=${SACCT}"
+export APRUNS="srun --nodes=1 --ntasks=1 --cpus-per-task=2 --account=${SACCT} --exclusive"
+export APRUNC="srun --nodes=1 --ntasks=6 --cpus-per-task=2 --account=${SACCT} --exclusive"
 
 # Used by OCN
 export OCN_SRC_GRID_NAME="mx025"
