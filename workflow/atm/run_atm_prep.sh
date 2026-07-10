@@ -294,6 +294,8 @@ prep_atm() {
         fi
         FHR=$(($FHR + ${FHRI}))
     done
+
+    wait
 }
 
 prep_sfc & PID_SFC=$!
