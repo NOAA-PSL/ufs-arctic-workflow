@@ -41,11 +41,11 @@ regional="${ATM_REGIONAL}"
 halo_bndy="${ATM_HALO_BNDY}"
 halo_blend="${ATM_HALO_BLEND}"
 
-mosaic_file_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/${ATM_DST_CASE}_mosaic.nc"
-fix_dir_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/sfc"
-orog_dir_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}"
+mosaic_file_target_grid="${FIX_DIR}/gridfiles/${ATM_DST_CASE}/${OCN_RES}/${ATM_DST_CASE}_mosaic.nc"
+fix_dir_target_grid="${FIX_DIR}/gridfiles/${ATM_DST_CASE}/${OCN_RES}/sfc"
+orog_dir_target_grid="${FIX_DIR}/gridfiles/${ATM_DST_CASE}/${OCN_RES}"
 orog_files_target_grid="${ATM_RES}_oro_data.tile${ATM_TILE}.halo${ATM_HALO_BNDY}.nc"
-vcoord_file_target_grid="${FIX_DIR}/mesh_files/${ATM_DST_CASE}/global_hyblev.l${ATM_LEVS}.txt"
+vcoord_file_target_grid="${FIX_DIR}/gridfiles/${ATM_DST_CASE}/${OCN_RES}/global_hyblev.l${ATM_LEVS}.txt"
 
 sotyp_from_climo=.true.
 vgtyp_from_climo=.true.
@@ -144,10 +144,10 @@ prep_sfc() {
             convert_atm=.false.
             convert_sfc=.true.
             convert_nst=.true.
-            mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-            orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
+            mosaic_file_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}/${ATM_SRC_CASE}_mosaic.nc"
+            orog_dir_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}"
             orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
-            data_dir_input_grid="${ATM_DATA_DIR}/ics"
+            data_dir_input_grid="${ATM_DATA_DIR}/ics/atm"
             atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
             atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
             sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
@@ -183,10 +183,10 @@ prep_atm() {
             convert_atm=.true.
             convert_sfc=.false.
             convert_nst=.false.
-            mosaic_file_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}/${ATM_SRC_CASE}_mosaic.nc"
-            orog_dir_input_grid="${FIX_DIR}/mesh_files/${ATM_SRC_CASE}"
+            mosaic_file_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}/${ATM_SRC_CASE}_mosaic.nc"
+            orog_dir_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}"
             orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
-            data_dir_input_grid="${ATM_DATA_DIR}/ics"
+            data_dir_input_grid="${ATM_DATA_DIR}/ics/atm"
             atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
             atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
             sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
@@ -201,7 +201,7 @@ prep_atm() {
             mosaic_file_input_grid="NULL"
             orog_dir_input_grid="NULL"
             orog_files_input_grid="NULL"
-            data_dir_input_grid="${ATM_DATA_DIR}/fcst/atmos/combined"
+            data_dir_input_grid="${ATM_DATA_DIR}/fcst/atm"
             atm_core_files_input_grid="NULL"
             atm_tracer_files_input_grid="NULL"
             input_type="grib2"
@@ -249,7 +249,7 @@ prep_atm() {
         mosaic_file_input_grid="NULL"
         orog_dir_input_grid="NULL"
         orog_files_input_grid="NULL"
-        data_dir_input_grid="${ATM_DATA_DIR}/fcst/atmos/combined"
+        data_dir_input_grid="${ATM_DATA_DIR}/fcst/atm"
         atm_files_input_grid="NULL"
         atm_core_files_input_grid="NULL"
         atm_tracer_files_input_grid="NULL"

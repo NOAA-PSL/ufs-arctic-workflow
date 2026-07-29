@@ -5,32 +5,36 @@
 # ================================= #
 
 SACCT="ufs-artic"       # Account for job submission
-HOURS=240               # Model forecast length (Max: 240 Hours)
-RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
-    "C918"
+HOURS=3                 # Model forecast length (Max: 240 Hours)
+ATM_RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
 #    "C185"
+    "C918"
+)
+OCN_RES=(
+    "ARC12"             # ARC12 = 12km, ARC0p08 = 3-5km
+#    "ARC0p08"
 )
 DATES=(                 # Format: YYYYMMDD
-#    "20191028"          # Options: 20191028 | 20200227 | 20200702 | 20200709 | 20200827
+    "20191028"          # Options: 20191028 | 20200227 | 20200702 | 20200709 | 20200827
 #    "20200227"
-    "20200702"
+#    "20200702"
 #    "20200709"
 #    "20200827"
 )
 # Optional: Specify pre-compiled directory. Leave blank to run from current directory.
-UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C8db7efa4/ufs-weather-model/"       
-#UFS_DIR=""
+#UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C8db7efa4/ufs-weather-model/"       
+UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/resource_tests" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/fix-files" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #
 # ================================= #
 
 QOS="debug"             # Specify QOS
-TIME="00:30:00"         # C918 may take longer than 60m. C185 should be less than 30m
+TIME="00:30:00"         # 30 min should work for C918 and C185
 NODES=1                 # Specify nodes
-NTASKS=30              # Specify tasks - Must be multiples of 6
+NTASKS=30               # Specify tasks - Must be multiples of 6
 CPUS=2                  # CPUS per task - Must be >= 2
 
 # ================================= #
@@ -41,11 +45,12 @@ echo "Starting batch submission..."
 SCRIPT="./workflow/run_workflow.sh"
 
 for d in "${DATES[@]}"; do
-for r in "${RES[@]}"; do
-    echo ">> Configuring run for date: $d | Hours: $HOURS | Resolution: $r | Acct: $SACCT"
+for a in "${ATM_RES[@]}"; do
+for o in "${OCN_RES[@]}"; do
+    echo ">> Configuring run for date: $d | Hours: $HOURS | Atm: $a | Ocn: $o | Acct: $SACCT"
 
     # Edit this as well if desired. Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
-    JOB_NAME="${r}_${d}_${HOURS}HRS"
+    JOB_NAME="${a}.${o}.${d}_${HOURS}HRS"
 
     CMD=(
         "sbatch"
@@ -59,7 +64,8 @@ for r in "${RES[@]}"; do
         "$SCRIPT"
         "--date" "$d"
         "--hours" "$HOURS"
-        "--res" "$r"
+        "--atm-res" "$a"
+        "--ocn-res" "$o"
         "--run-dir" "$BASE_RUN_DIR"
         "--job-name" "$JOB_NAME")
 
@@ -78,5 +84,7 @@ for r in "${RES[@]}"; do
     "${CMD[@]}"
 
     sleep 1
-done
-done
+
+done # OCN_RES
+done # ATM_RES
+done # DATES

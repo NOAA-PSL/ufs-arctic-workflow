@@ -6,7 +6,7 @@
 #SBATCH --nodes=6
 #SBATCH --ntasks-per-node=40
 #SBATCH --time=3:00:00
-#SBATCH --job-name="YEAR-MONTH-DAY_NHRSHR"
+#SBATCH --job-name="CRES.ORES.YEARMONTHDAY_NHRSHR"
 
 set -eux
 date_s_start=$(date +%s)
