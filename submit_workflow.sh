@@ -7,8 +7,8 @@
 SACCT="ufs-artic"       # Account for job submission
 HOURS=3                 # Model forecast length (Max: 240 Hours)
 ATM_RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
-#    "C185"
-    "C918"
+    "C185"
+#    "C918"
 )
 OCN_RES=(
     "ARC12"             # ARC12 = 12km, ARC0p08 = 3-5km
@@ -25,7 +25,7 @@ DATES=(                 # Format: YYYYMMDD
 #UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C8db7efa4/ufs-weather-model/"       
 UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/fix-files" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/config" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #

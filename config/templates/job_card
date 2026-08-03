@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH -e err
 #SBATCH -o out
-#SBATCH --account=SACCT
+#SBATCH --account={{SACCT}}
 #SBATCH --qos=batch
-#SBATCH --nodes=6
-#SBATCH --ntasks-per-node=40
-#SBATCH --time=3:00:00
-#SBATCH --job-name="CRES.ORES.YEARMONTHDAY_NHRSHR"
+#SBATCH --nodes={{NODES}}
+#SBATCH --ntasks-per-node={{NTASKSPN}}
+#SBATCH --time={{TIME}}
+#SBATCH --job-name="{{ATM_RES}}.{{OCN_RES}}.{{YEAR}}{{MONTH}}{{DAY}}_{{NHRS}}HR"
 
 set -eux
 date_s_start=$(date +%s)
@@ -44,7 +44,7 @@ if [ "${JOB_SHOULD_FAIL:-NO}" = WHEN_RUNNING ] ; then
 fi
 
 # shellcheck disable=SC2102
-srun --label -n 240 ./fv3.exe
+srun --label -n {{NTASKS}} ./fv3.exe
 
 date_end=$(date)
 echo "Model ended: ${date_end}"

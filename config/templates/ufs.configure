@@ -14,7 +14,7 @@ EARTH_attributes::
 
 # MED #
 MED_model:                      cmeps
-MED_petlist_bounds:             0 239
+MED_petlist_bounds:             {{MEDPETBND}} 
 MED_omp_num_threads:            1
 MED_attributes::
   Verbosity = 0
@@ -35,7 +35,7 @@ MED_attributes::
 
 # ATM #
 ATM_model:                      fv3
-ATM_petlist_bounds:             0 649
+ATM_petlist_bounds:             {{ATMPETBND}}
 ATM_omp_num_threads:            1
 ATM_attributes::
   Verbosity = 0
@@ -49,7 +49,7 @@ ATM_attributes::
 
 # OCN #
 OCN_model:                      mom6
-OCN_petlist_bounds:             650 799
+OCN_petlist_bounds:             {{OCNPETBND}}
 OCN_omp_num_threads:            1
 OCN_attributes::
   Verbosity = 0
@@ -65,7 +65,7 @@ OCN_attributes::
 
 # ICE #
 ICE_model:                      cice6
-ICE_petlist_bounds:             800 839
+ICE_petlist_bounds:             {{ICEPETBND}}
 ICE_omp_num_threads:            1
 ICE_attributes::
   Verbosity = 10

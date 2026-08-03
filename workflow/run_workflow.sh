@@ -143,38 +143,44 @@ module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/inst
 
 # Helper function for rendering config files 
 render_template() {
-    if [[ "$ATM_RES" == "C185" ]]; then
-        NPX=156
-        NPY=126
-    elif [[ "$ATM_RES" == "C918" ]]; then
-        NPX=726
-        NPY=576
-    fi
-
+  (
     local src="$1"
     local dest="$2"
-
     [ -f "$src" ] || error_exit "Template file missing: $src"
 
-    sed -e "s|YEAR|${YEAR}|g" \
-        -e "s|MONTH|${MONTH}|g" \
-        -e "s|DAY|${DAY}|g" \
-        -e "s|NHRS|${NHRS}|g" \
-        -e "s|SACCT|${SACCT}|g" \
-        -e "s|NPX|${NPX}|g" \
-        -e "s|NPY|${NPY}|g" \
-        -e "s|CRES|${ATM_RES}|g" \
-        -e "s|ORES|${OCN_RES}|g" \
+    source ${CONFIG_DIR}/params.sh || error_exit "Unable to access ${CONFIG_DIR}/params.sh"
+    
+    YEAR="${CDATE:0:4}"
+    MONTH="${CDATE:4:2}"
+    DAY="${CDATE:6:2}"
+
+    sed -e "s|{{YEAR}}|${YEAR}|g" \
+        -e "s|{{MONTH}}|${MONTH}|g" \
+        -e "s|{{DAY}}|${DAY}|g" \
+        -e "s|{{NHRS}}|${NHRS}|g" \
+        -e "s|{{SACCT}}|${SACCT}|g" \
+        -e "s|{{ATM_RES}}|${ATM_RES}|g" \
+        -e "s|{{OCN_RES}}|${OCN_RES}|g" \
+        -e "s|{{NPX}}|${NPX}|g" \
+        -e "s|{{NPY}}|${NPY}|g" \
+        -e "s|{{BLOCKSIZE}}|${BLOCKSIZE}|g" \
+        -e "s|{{LAYOUT}}|${LAYOUT}|g" \
+        -e "s|{{NODES}}|${NODES}|g" \
+        -e "s|{{NTASKSPN}}|${NTASKSPN}|g" \
+        -e "s|{{NTASKS}}|${NTASKS}|g" \
+        -e "s|{{TIME}}|${TIME}|g" \
+        -e "s|{{WRITETASKS}}|${WRITETASKS}|g" \
+        -e "s|{{MEDPETBND}}|${MEDPETBND}|g" \
+        -e "s|{{ATMPETBND}}|${ATMPETBND}|g" \
+        -e "s|{{OCNPETBND}}|${OCNPETBND}|g" \
+        -e "s|{{ICEPETBND}}|${ICEPETBND}|g" \
         "${src}" > "${dest}" || error_exit "Failed to render template: $src"
+  )
 }
 
 # Make a new run directory
 setup() {
     log_info "Populating model run directory in: ${MODEL_DIR} ..."
-
-    YEAR="${CDATE:0:4}"
-    MONTH="${CDATE:4:2}"
-    DAY="${CDATE:6:2}"
 
     mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles} || error_exit "Could not create subdirectories in ${MODEL_DIR}"
    
@@ -212,15 +218,6 @@ setup() {
     fi
 
     # Add fixed config files
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/data_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/diag_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/fd_ufs.yaml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/field_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/module-setup.sh ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/noahmptable.tbl ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/ufs.configure ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/input.nml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/MOM_input ${MODEL_DIR}/.
 
     ln -sf ${ATM_RES}.facsf.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
     ln -sf ${ATM_RES}.facsf.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile7.nc                
@@ -241,11 +238,19 @@ setup() {
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile7.nc
 
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/ice_in" "${MODEL_DIR}/ice_in"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/diag_table" "${MODEL_DIR}/diag_table"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/model_configure" "${MODEL_DIR}/model_configure"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/job_card" "${MODEL_DIR}/job_card"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/input.nml" "${MODEL_DIR}/input.nml"
+    cp -P ${CONFIG_DIR}/templates/data_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/fd_ufs.yaml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/field_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/module-setup.sh ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/noahmptable.tbl ${MODEL_DIR}/.
+
+    render_template "${CONFIG_DIR}/templates/ice_in" "${MODEL_DIR}/ice_in"
+    render_template "${CONFIG_DIR}/templates/diag_table" "${MODEL_DIR}/diag_table"
+    render_template "${CONFIG_DIR}/templates/model_configure" "${MODEL_DIR}/model_configure"
+    render_template "${CONFIG_DIR}/templates/job_card" "${MODEL_DIR}/job_card"
+    render_template "${CONFIG_DIR}/templates/input.nml" "${MODEL_DIR}/input.nml"
+    render_template "${CONFIG_DIR}/templates/ufs.configure" "${MODEL_DIR}/ufs.configure"
+    render_template "${CONFIG_DIR}/templates/MOM_input" "${MODEL_DIR}/MOM_input"
 
     log_info "Model run directory successfully built."
 
