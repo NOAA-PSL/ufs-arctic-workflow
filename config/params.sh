@@ -18,7 +18,7 @@ case "$ATM_RES" in
     LAYOUT="25,25"
     WRITETASKS=25
     MEDPETS=240
-    ATMPETBND=650
+    ATMPETS=650
     ;;
   *)
     echo "Unsupported ATM_RES: $ATM_RES"
