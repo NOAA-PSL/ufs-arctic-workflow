@@ -39,7 +39,7 @@ case "$OCN_RES" in
     ICEBLOCKY=87
     TIDEDISS="True"
     VARPENSW="True"
-    CHL_BLOCK='CHL_FILE = "seawifs-clim-1997-2010.smoothed.nc\nPEN_SW_NBANDS = 3" !'
+    CHL_BLOCK=$'CHL_FILE = "seawifs-clim-1997-2010.smoothed.nc"\nPEN_SW_NBANDS = 3'
     ;;
   "ARC0p08")
     NIGLOBAL=1568
