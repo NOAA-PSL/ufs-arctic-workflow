@@ -46,7 +46,8 @@ help() {
     echo "Required Options:"
     echo " --date YYYYMMDD      Start date (e.g., 20191028)"
     echo " --hours N            Run length in hours (Max: 240)"
-    echo " --res RES            Atmospheric resolution (C185 or C918)"
+    echo " --atm-res ATMRES      Atmospheric resolution (C185 or C918)"
+    echo " --ocn-res OCNRES      Ocean/Ice resolution (ARC12 or ARC0p08)"
     echo ""
     echo "Optional Configuration:"
     echo " --run-dir PATH       Path to place the workflow output directory"
@@ -70,7 +71,8 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --date) export CDATE="$2"; shift 2 ;;
         --hours) export NHRS="$2"; shift 2 ;;
-        --res) export ATM_RES="$2"; shift 2 ;;
+        --atm-res) export ATM_RES="$2"; shift 2 ;;
+        --ocn-res) export OCN_RES="$2"; shift 2 ;;
         --run-dir) RUN_DIR="$2"; shift 2 ;;
         --job-name) JOB_NAME="$2"; shift 2 ;;
         --system) export SYSTEM="$2"; shift 2 ;;
@@ -84,8 +86,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate the required arguments
-if [[ -z "$CDATE" || -z "$NHRS" || -z "$ATM_RES" ]]; then
-    error_exit "Missing required arguments: --date, --hours, --account, and --res are required. Use --help for more information"
+if [[ -z "$CDATE" || -z "$NHRS" || -z "$ATM_RES" || -z "$OCN_RES" ]]; then
+    error_exit "Missing required arguments: --date, --hours, --account, --atm-res, and --ocn-res are required. Use --help for more information"
 fi
 
 if [[ -z "$RUN_DIR" ]]; then
@@ -123,10 +125,13 @@ if [[ ! -e "$UFS_DIR/build/ufs_model" ]]; then
     error_exit "Missing executable: $UFS_DIR/build/ufs_model"
 fi
 
-export FIX_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/files/ufs_arctic_development/fix_files"
 export CONFIG_DIR="${TOP_DIR}/config"
 export MODEL_DIR="${RUN_DIR}/${JOB_NAME}"
 export STATUS_DIR="${MODEL_DIR}/.status"
+export PREP_DIR="${MODEL_DIR}/PREP"
+
+NAMELIST_FILE="${CONFIG_DIR}/config.in"
+source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
 
 conda_env="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/ufs-arctic"
 module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/install/modulefiles/Core"
@@ -138,37 +143,26 @@ module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/inst
 
 # Helper function for rendering config files 
 render_template() {
-    if [[ "$ATM_RES" == "C185" ]]; then
-        NPX=156
-        NPY=126
-    elif [[ "$ATM_RES" == "C918" ]]; then
-        NPX=726
-        NPY=576
-    fi
+   (
+     local src="$1"
+     local dest="$2"
+     [ -f "$src" ] || error_exit "Template file missing: $src"
 
-    local src="$1"
-    local dest="$2"
+     # Export all required variables for template filekJ;w
+     set -a
+     source "${CONFIG_DIR}/params.sh" || error_exit "Unable to access ${CONFIG_DIR}/params.sh"
+     YEAR="${CDATE:0:4}"
+     MONTH="${CDATE:4:2}"
+     DAY="${CDATE:6:2}"
+     set +a
 
-    [ -f "$src" ] || error_exit "Template file missing: $src"
-
-    sed -e "s|YEAR|${YEAR}|g" \
-        -e "s|MONTH|${MONTH}|g" \
-        -e "s|DAY|${DAY}|g" \
-        -e "s|NHRS|${NHRS}|g" \
-        -e "s|SACCT|${SACCT}|g" \
-        -e "s|NPX|${NPX}|g" \
-        -e "s|NPY|${NPY}|g" \
-        -e "s|CRES|${ATM_RES}|g" \
-        "${src}" > "${dest}" || error_exit "Failed to render template: $src"
+     perl -p -e 's/\{\{([^}]+)\}\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' "${src}" > "${dest}" || error_exit "Failed to render template: $src"
+   )
 }
 
 # Make a new run directory
 setup() {
     log_info "Populating model run directory in: ${MODEL_DIR} ..."
-
-    YEAR="${CDATE:0:4}"
-    MONTH="${CDATE:4:2}"
-    DAY="${CDATE:6:2}"
 
     mkdir -p "${MODEL_DIR}"/{INPUT,OUTPUT,RESTART,history,modulefiles} || error_exit "Could not create subdirectories in ${MODEL_DIR}"
    
@@ -187,10 +181,9 @@ setup() {
         ln -sf "${ATM_RES}_oro_data_ss.tile7.halo0.nc" oro_data_ss.nc
     )
 
-    cp -P "${FIX_DIR}/mesh_files/${ATM_RES}/sfc/"*.nc "${MODEL_DIR}/"
-    cp -P "${FIX_DIR}/mesh_files/${ATM_RES}/"*.nc "${MODEL_DIR}/INPUT/"
-    cp -L "${FIX_DIR}/input_grid_files/ocn/"*.nc "${MODEL_DIR}/INPUT/"
-    cp -L "${FIX_DIR}/input_grid_files/ice/"*.nc "${MODEL_DIR}/INPUT/"
+    cp -P "${FIX_DIR}/gridfiles/${ATM_RES}/${OCN_RES}/sfc/"*.nc "${MODEL_DIR}/"
+    cp -P "${FIX_DIR}/gridfiles/${ATM_RES}/${OCN_RES}/"*.nc "${MODEL_DIR}/INPUT/"
+    cp -L "${FIX_DIR}/gridfiles/${OCN_RES}/INPUT/"*.nc "${MODEL_DIR}/INPUT/"
     cp -P "${FIX_DIR}/datasets/run_dir/"* "${MODEL_DIR}/"
 
     ln -sf "${ATM_RES}_grid.tile7.halo3.nc" "${MODEL_DIR}/INPUT/${ATM_RES}_grid.tile7.nc"
@@ -207,15 +200,6 @@ setup() {
     fi
 
     # Add fixed config files
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/data_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/diag_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/fd_ufs.yaml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/field_table ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/module-setup.sh ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/noahmptable.tbl ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/ufs.configure ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/input.nml ${MODEL_DIR}/.
-    cp -P ${CONFIG_DIR}/templates/${ATM_RES}/MOM_input ${MODEL_DIR}/.
 
     ln -sf ${ATM_RES}.facsf.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile1.nc                
     ln -sf ${ATM_RES}.facsf.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.facsf.tile7.nc                
@@ -236,22 +220,27 @@ setup() {
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile1.nc
     ln -sf ${ATM_RES}.vegetation_greenness.tile7.halo0.nc ${MODEL_DIR}/${ATM_RES}.vegetation_greenness.tile7.nc
 
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/ice_in" "${MODEL_DIR}/ice_in"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/diag_table" "${MODEL_DIR}/diag_table"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/model_configure" "${MODEL_DIR}/model_configure"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/job_card" "${MODEL_DIR}/job_card"
-    render_template "${CONFIG_DIR}/templates/${ATM_RES}/input.nml" "${MODEL_DIR}/input.nml"
+    cp -P ${CONFIG_DIR}/templates/data_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/fd_ufs.yaml ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/field_table ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/module-setup.sh ${MODEL_DIR}/.
+    cp -P ${CONFIG_DIR}/templates/noahmptable.tbl ${MODEL_DIR}/.
+
+    render_template "${CONFIG_DIR}/templates/ice_in" "${MODEL_DIR}/ice_in"
+    render_template "${CONFIG_DIR}/templates/diag_table" "${MODEL_DIR}/diag_table"
+    render_template "${CONFIG_DIR}/templates/model_configure" "${MODEL_DIR}/model_configure"
+    render_template "${CONFIG_DIR}/templates/job_card" "${MODEL_DIR}/job_card"
+    render_template "${CONFIG_DIR}/templates/input.nml" "${MODEL_DIR}/input.nml"
+    render_template "${CONFIG_DIR}/templates/ufs.configure" "${MODEL_DIR}/ufs.configure"
+    render_template "${CONFIG_DIR}/templates/MOM_input" "${MODEL_DIR}/MOM_input"
 
     log_info "Model run directory successfully built."
 
 }
 
 prep_init() {
-    export PREP_DIR="${MODEL_DIR}/PREP"
     mkdir -p "${PREP_DIR}/intercom"
     mkdir -p "${MODEL_DIR}/INPUT"
-    local NAMELIST_FILE="${CONFIG_DIR}/config.in"
-    source "$NAMELIST_FILE" || error_exit "Namelist file not found: $NAMELIST_FILE"
 }
 
 prep_ocn() {
@@ -303,7 +292,8 @@ prep_atm() {
 
 run_model() {
     log_info "Submitting model run..."
-    (cd "${MODEL_DIR}" && sbatch job_card) || error_exit "Job submission failed."
+    (cd "${MODEL_DIR}" && env $(env | awk -F= '/^SLURM_/{print "-u", $1}') sbatch job_card) || error_exit "Job submission failed."
+
 }
 
 # ================================= #
@@ -319,6 +309,7 @@ module load nco || error_exit "Failed to load nco module."
 module load cdo || error_exit "Failed to load cdo module."
 module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
 conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
+
 
 if [ ! -d "$MODEL_DIR" ]; then
     log_info "Creating new run directory: $MODEL_DIR"

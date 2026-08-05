@@ -1,16 +1,16 @@
 &setup_nml
     days_per_year       = 365
     use_leap_years      = .true.
-    year_init           = YEAR
-    month_init          = MONTH
-    day_init            = DAY
+    year_init           = {{YEAR}}
+    month_init          = {{MONTH}}
+    day_init            = {{DAY}}
     sec_init            = 10800 
     dt                  = 180
     npt                 = 999
     ndtd                = 1
     runtype             = 'initial'
     runid               = 'unknown'
-    ice_ic              = 'INPUT/replay_ice.arctic_grid.YEAR-MONTH-DAY-10800.nc'
+    ice_ic              = 'INPUT/replay_ice.arctic_grid.{{YEAR}}-{{MONTH}}-{{DAY}}-10800.nc'
     restart             = .true.
     restart_ext         = .false.
     use_restart_time    = .false.
@@ -178,11 +178,11 @@
 /
 
 &domain_nml
-    nprocs            = 40
-    nx_global         = 540
-    ny_global         = 696
-    block_size_x      = 108
-    block_size_y      = 87
+    nprocs            = {{ICEPETS}}
+    nx_global         = {{NIGLOBAL}}
+    ny_global         = {{NJGLOBAL}}
+    block_size_x      = {{ICEBLOCKX}}
+    block_size_y      = {{ICEBLOCKY}}
     max_blocks        = -1
     processor_shape   = 'square-ice'
     distribution_type = 'cartesian'

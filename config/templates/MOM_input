@@ -84,10 +84,10 @@ REENTRANT_X = False             !   [Boolean] default = True
 !SYMMETRIC_MEMORY_ = True
 !STATIC_MEMORY_ = False
 
-NIGLOBAL = 540                 !
+NIGLOBAL = {{NIGLOBAL}}         !
                                 ! The total number of thickness grid points in the x-direction in the physical
                                 ! domain. With STATIC_MEMORY_ this is set in MOM_memory.h at compile time.
-NJGLOBAL = 696                  !
+NJGLOBAL = {{NJGLOBAL}}                  !
                                 ! The total number of thickness grid points in the y-direction in the physical
                                 ! domain. With STATIC_MEMORY_ this is set in MOM_memory.h at compile time.
 !NIHALO = 4                      ! default = 4
@@ -145,7 +145,7 @@ TOPO_CONFIG = "file"            !
                                 !     Phillips - ACC-like idealized topography used in the Phillips config.
                                 !     dense - Denmark Strait-like dense water formation and overflow.
                                 !     USER - call a user modified routine.
-TOPO_FILE = "patch.ocean_topog.nc"    ! default = "topog.nc"
+TOPO_FILE = "{{TOPO_FILE}}"    ! default = "topog.nc"
                                 ! The file from which the bathymetry is read.
 MAXIMUM_DEPTH = 6500.0          !   [m]
                                 ! The maximum depth of the ocean.
@@ -592,7 +592,7 @@ BEBT = 0.2                      !   [nondim] default = 0.1
                                 ! from 0 (for a forward-backward treatment of nonrotating gravity waves) to 1
                                 ! (for a backward Euler treatment). In practice, BEBT must be greater than about
                                 ! 0.05.
-DTBT = -0.9                     !   [s or nondim] default = -0.98
+DTBT = {{DTBT}}                     !   [s or nondim] default = -0.98
                                 ! The barotropic time step, in s. DTBT is only used with the split explicit time
                                 ! stepping. To set the time step automatically based the maximum stable value
                                 ! use 0, or a negative value gives the fraction of the stable value. Setting
@@ -644,7 +644,7 @@ EPBL_IS_ADDITIVE = False        !   [Boolean] default = True
 
 ! === module MOM_tidal_mixing ===
 ! Vertical Tidal Mixing Parameterization
-INT_TIDE_DISSIPATION = True     !   [Boolean] default = False
+INT_TIDE_DISSIPATION = {{TIDEDISS}}     !   [Boolean] default = False
                                 ! If true, use an internal tidal dissipation scheme to drive diapycnal mixing,
                                 ! along the lines of St. Laurent et al. (2002) and Simmons et al. (2004).
 INT_TIDE_PROFILE = "POLZIN_09"  ! default = "STLAURENT_02"
@@ -665,7 +665,7 @@ KAPPA_H2_FACTOR = 0.84          !   [nondim] default = 1.0
 TKE_ITIDE_MAX = 0.1             !   [W m-2] default = 1000.0
                                 ! The maximum internal tide energy source available to mix above the bottom
                                 ! boundary layer with INT_TIDE_DISSIPATION.
-READ_TIDEAMP = True             !   [Boolean] default = False
+READ_TIDEAMP = {{TIDEDISS}}             !   [Boolean] default = False
                                 ! If true, read a file (given by TIDEAMP_FILE) containing the tidal amplitude
                                 ! with INT_TIDE_DISSIPATION.
 TIDEAMP_FILE = "tidal_amplitude_Arctic_12k.nc" ! default = "tideamp.nc"
@@ -744,10 +744,10 @@ PRESSURE_DEPENDENT_FRAZIL = True !   [Boolean] default = False
                                 ! If true, use a pressure dependent freezing temperature when making frazil. The
                                 ! default is false, which will be faster but is inappropriate with ice-shelf
                                 ! cavities.
-VAR_PEN_SW = True               !   [Boolean] default = False
+VAR_PEN_SW = {{VARPENSW}}               !   [Boolean] default = False
                                 ! If true, use one of the CHL_A schemes specified by OPACITY_SCHEME to determine
                                 ! the e-folding depth of incoming short wave radiation.
-CHL_FILE = "seawifs-clim-1997-2010.smoothed.nc" !
+{{CHL_BLOCK}}
                                 ! CHL_FILE is the file containing chl_a concentrations in the variable CHL_A. It
                                 ! is used when VAR_PEN_SW and CHL_FROM_FILE are true.
 CHL_VARNAME = "chlor_a"
@@ -823,7 +823,6 @@ LT_MOD_LAC5 = 0.22              !   [nondim] default = 0.95
 ! === module MOM_regularize_layers ===
 
 ! === module MOM_opacity ===
-PEN_SW_NBANDS = 3               ! default = 1
                                 ! The number of bands of penetrating shortwave radiation.
 
 ! === module MOM_tracer_advect ===

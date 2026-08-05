@@ -1,17 +1,17 @@
-start_year:              YEAR
-start_month:             MONTH
-start_day:               DAY
+start_year:              {{YEAR}}
+start_month:             {{MONTH}}
+start_day:               {{DAY}}
 start_hour:              3
 start_minute:            0
 start_second:            0
-nhours_fcst:             NHRS
+nhours_fcst:             {{NHRS}}
 dt_atmos:                180
 restart_interval:        240
 
 quilting:                .true.
 quilting_restart:        .true.
 write_groups:            1
-write_tasks_per_group:   25
+write_tasks_per_group:   {{WRITETASKS}}
 num_files:               2
 filename_base:           'atm' 'sfc'
 output_file:             'netcdf' 'netcdf'

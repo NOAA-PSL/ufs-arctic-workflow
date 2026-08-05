@@ -18,7 +18,7 @@ error_exit() { log_error "$1"; exit 1; }
 
 # Fail-fast validation
 required_vars=(
-    "CDATE" "OCNINTYPE" "NLN" "APRUNS" "OCN_RUN_DIR" 
+    "CDATE" "OCN_SRC_GRID" "NLN" "APRUNS" "OCN_RUN_DIR" 
     "OCN_SCRIPT_DIR" "OCN_DST_GRID_DIR" "OCN_SRC_GRID_DIR"
 )
 for var in "${required_vars[@]}"; do
@@ -47,13 +47,13 @@ ${NLN} "${OCN_DST_GRID_DIR}"/* "${OCN_RUN_DIR}/inputs/."
 ${NLN} "${OCN_SRC_GRID_DIR}"/* "${OCN_RUN_DIR}/inputs/."
 ${NLN} "${OCN_SCRIPT_DIR}/inputs/"* "${OCN_RUN_DIR}/inputs/."
 
-if [ $OCNINTYPE == 'gefs' ]; then
+if [[ $OCN_SRC_GRID == 'mx025' ]]; then
     export WGT_FILE_BASE=${OCN_WGT_FILE_BASE}
-    ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP_masked.nc"
-    BCFILENAME="${OCN_RUN_DIR}/inputs/Ct.mx025_SCRIP.nc"
+    ICFILENAME="${OCN_RUN_DIR}/inputs/Ct.${OCN_SRC_GRID}_SCRIP_masked.nc"
+    BCFILENAME="${OCN_RUN_DIR}/inputs/Ct.${OCN_SRC_GRID}_SCRIP.nc"
     METHOD="neareststod"
     ${NLN} ${OCN_SRC_DIR}/*.nc ${OCN_RUN_DIR}/inputs/.
-elif [[ "$OCNINTYPE" == 'rtofs' ]]; then
+elif [[ "$OCN_SRC_GRID" == 'rtofs' ]]; then
     WGT_FILE_BASE='rtofs2arctic'
     ICFILENAME="${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc"
     BCFILENAME="${OCN_RUN_DIR}/inputs/rtofs_global_ssh_ic.nc"
@@ -101,7 +101,7 @@ OUTPUT_DIR="${OCN_RUN_DIR}/intercom"
 OUT_FILE_PATH="${OUTPUT_DIR}/${OCN_IC_FILE}"
 TMP_FILE_PATH="${OUT_FILE_PATH}.tmp"
 DST_VRT_FILE_PATH="${INPUT_DIR}/${OCN_DST_VRT_FILE}"
-H_WGT="${INPUT_DIR}/${WGT_FILE_BASE}_h.nc"
+H_WGT="${INPUT_DIR}/${WGT_FILE_BASE}.h.nc"
 
 if [ -s "$OUT_FILE_PATH" ]; then
     log_info "-> Ocean IC file already exists and is complete. Skipping."
@@ -110,7 +110,7 @@ else
     log_info "-> Generating Ocean IC files..."
     cd "${OCN_RUN_DIR}/inputs/"
     
-    if [[ "$OCNINTYPE" == 'rtofs' ]]; then
+    if [[ "$OCN_SRC_GRID" == 'rtofs' ]]; then
         export CDF038="rtofs_global_ssh_ic.nc"
         export CDF034="rtofs_global_ts_ic.nc"
         export CDF033="rtofs_global_uv_ic.nc"
@@ -139,9 +139,9 @@ else
     fi
     
     # Generate Center, U, and V Weights
-    generate_weight "${ICFILENAME}" "ocean_mask.nc"      "${WGT_FILE_BASE}_h.nc"
-    generate_weight "${ICFILENAME}" "ocean_subgrid_v.nc" "${WGT_FILE_BASE}_v.nc"
-    generate_weight "${ICFILENAME}" "ocean_subgrid_u.nc" "${WGT_FILE_BASE}_u.nc"
+    generate_weight "${ICFILENAME}" "ocean_mask.nc"      "${WGT_FILE_BASE}.h.nc"
+    generate_weight "${ICFILENAME}" "ocean_subgrid_v.nc" "${WGT_FILE_BASE}.v.nc"
+    generate_weight "${ICFILENAME}" "ocean_subgrid_u.nc" "${WGT_FILE_BASE}.u.nc"
     
     rm -f "$TMP_FILE_PATH"
 
@@ -154,7 +154,7 @@ else
         --dst_ang_name "${OCN_DST_ANG_NAME}" \
         --dst_ang_file "${INPUT_DIR}/${OCN_DST_ANG_FILE}" \
         --dst_ang_supergrid "${OCN_DST_CONVERT_ANG}" \
-        --wgt_file "${INPUT_DIR}/${WGT_FILE_BASE}_u.nc" "${INPUT_DIR}/${WGT_FILE_BASE}_v.nc" \
+        --wgt_file "${INPUT_DIR}/${WGT_FILE_BASE}.u.nc" "${INPUT_DIR}/${WGT_FILE_BASE}.v.nc" \
         --vrt_file "${DST_VRT_FILE_PATH}" \
         --out_file "${TMP_FILE_PATH}" \
         --dz_name "${OCN_DST_VRT_NAME}" \
@@ -199,7 +199,7 @@ fi
 log_info "-> Generating Ocean OBC files..."
 cd "${OCN_RUN_DIR}/inputs/"
 
-if [[ "$OCNINTYPE" == 'rtofs' ]]; then
+if [[ "$OCN_SRC_GRID" == 'rtofs' ]]; then
     export CDF038="rtofs.${type}${hour}_global_ssh_obc.nc"
     export CDF034="rtofs.${type}${hour}_global_ts_obc.nc"
     export CDF033="rtofs.${type}${hour}_global_uv_obc.nc"
@@ -212,8 +212,8 @@ if [[ "$OCNINTYPE" == 'rtofs' ]]; then
 
     unlink archv_in.a
     unlink archv_in.b
-elif [[ "$OCNINTYPE" != 'gefs' ]]; then
-    error_exit "OCN source grid type invalid: ${OCNINTYPE}"
+elif [[ "$OCN_SRC_GRID" != 'mx025' ]]; then
+    error_exit "OCN source grid type invalid: ${OCN_SRC_GRID}"
 fi
 
 TMP_VARNAME_OUT="${OCN_TMP_VARNAME_OUT:-$OCN_TMP_VARNAME}"
@@ -227,7 +227,7 @@ obc_scalars=(
 
 for i in 001 002 003 004; do
     
-    WGT_FILE="${WGT_FILE_BASE}_${i}.nc"
+    WGT_FILE="${WGT_FILE_BASE}.${i}.nc"
     WGT_PATH="${INPUT_DIR}/${WGT_FILE}"
     OBC_OUT_PATH="${OUTPUT_DIR}/${OCN_OUT_FILE_PATH_BASE}${i}${OCN_FILE_TAIL}"
     OBC_TMP_PATH="${OBC_OUT_PATH}.tmp"

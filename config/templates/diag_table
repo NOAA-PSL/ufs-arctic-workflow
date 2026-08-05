@@ -1,5 +1,5 @@
 ufs.arctic
-YEAR MONTH DAY 03 0 0
+{{YEAR}} {{MONTH}} {{DAY}} 03 0 0
 
 #output files
  "grid_spec",     -1,  "months",  1,  "days",   "time"
