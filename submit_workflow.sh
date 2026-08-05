@@ -11,8 +11,7 @@ ATM_RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
 #    "C918"
 )
 OCN_RES=(
-    "ARC12"             # ARC12 = 12km, ARC0p08 = 3-5km
-#    "ARC0p08"
+    "ARC12"             
 )
 DATES=(                 # Format: YYYYMMDD
     "20191028"          # Options: 20191028 | 20200227 | 20200702 | 20200709 | 20200827
@@ -25,7 +24,7 @@ DATES=(                 # Format: YYYYMMDD
 #UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C8db7efa4/ufs-weather-model/"       
 UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/config" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #

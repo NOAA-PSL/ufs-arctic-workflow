@@ -143,39 +143,21 @@ module_path="/contrib/spack-stack/spack-stack-1.9.3/envs/ue-oneapi-2024.2.1/inst
 
 # Helper function for rendering config files 
 render_template() {
-  (
-    local src="$1"
-    local dest="$2"
-    [ -f "$src" ] || error_exit "Template file missing: $src"
+   (
+     local src="$1"
+     local dest="$2"
+     [ -f "$src" ] || error_exit "Template file missing: $src"
 
-    source ${CONFIG_DIR}/params.sh || error_exit "Unable to access ${CONFIG_DIR}/params.sh"
-    
-    YEAR="${CDATE:0:4}"
-    MONTH="${CDATE:4:2}"
-    DAY="${CDATE:6:2}"
+     # Export all required variables for template filekJ;w
+     set -a
+     source "${CONFIG_DIR}/params.sh" || error_exit "Unable to access ${CONFIG_DIR}/params.sh"
+     YEAR="${CDATE:0:4}"
+     MONTH="${CDATE:4:2}"
+     DAY="${CDATE:6:2}"
+     set +a
 
-    sed -e "s|{{YEAR}}|${YEAR}|g" \
-        -e "s|{{MONTH}}|${MONTH}|g" \
-        -e "s|{{DAY}}|${DAY}|g" \
-        -e "s|{{NHRS}}|${NHRS}|g" \
-        -e "s|{{SACCT}}|${SACCT}|g" \
-        -e "s|{{ATM_RES}}|${ATM_RES}|g" \
-        -e "s|{{OCN_RES}}|${OCN_RES}|g" \
-        -e "s|{{NPX}}|${NPX}|g" \
-        -e "s|{{NPY}}|${NPY}|g" \
-        -e "s|{{BLOCKSIZE}}|${BLOCKSIZE}|g" \
-        -e "s|{{LAYOUT}}|${LAYOUT}|g" \
-        -e "s|{{NODES}}|${NODES}|g" \
-        -e "s|{{NTASKSPN}}|${NTASKSPN}|g" \
-        -e "s|{{NTASKS}}|${NTASKS}|g" \
-        -e "s|{{TIME}}|${TIME}|g" \
-        -e "s|{{WRITETASKS}}|${WRITETASKS}|g" \
-        -e "s|{{MEDPETBND}}|${MEDPETBND}|g" \
-        -e "s|{{ATMPETBND}}|${ATMPETBND}|g" \
-        -e "s|{{OCNPETBND}}|${OCNPETBND}|g" \
-        -e "s|{{ICEPETBND}}|${ICEPETBND}|g" \
-        "${src}" > "${dest}" || error_exit "Failed to render template: $src"
-  )
+     perl -p -e 's/\{\{([^}]+)\}\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' "${src}" > "${dest}" || error_exit "Failed to render template: $src"
+   )
 }
 
 # Make a new run directory

@@ -178,11 +178,11 @@
 /
 
 &domain_nml
-    nprocs            = 40
-    nx_global         = 540
-    ny_global         = 696
-    block_size_x      = 108
-    block_size_y      = 87
+    nprocs            = {{ICEPETS}}
+    nx_global         = {{NIGLOBAL}}
+    ny_global         = {{NJGLOBAL}}
+    block_size_x      = {{ICEBLOCKX}}
+    block_size_y      = {{ICEBLOCKY}}
     max_blocks        = -1
     processor_shape   = 'square-ice'
     distribution_type = 'cartesian'
