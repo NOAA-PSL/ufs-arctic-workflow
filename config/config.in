@@ -94,5 +94,6 @@ export SFC_ICTYPE="restart_files"
 export ATM_ICTYPE="grib_files" 
 export ATM_BCTYPE="grib_files"
 export ATM_NBDYINT=3 # Boundary input interval in hours
+export ATM_DO_LSU="True" # Set 'True' to add Land spinup data to surface file
 export UFSUTILS_DIR="${FIX_DIR}/exe/UFS_UTILS/"
 export CHGRES_EXEC="$UFSUTILS_DIR/exec/chgres_cube"

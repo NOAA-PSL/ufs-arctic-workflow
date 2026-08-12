@@ -21,7 +21,7 @@ DATES=(                 # Format: YYYYMMDD
 #    "20200827"
 )
 # Optional: Specify pre-compiled directory. Leave blank to run from current directory.
-#UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/C8db7efa4/ufs-weather-model/"       
+#UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/Cc522566f/ufs-weather-model/"       
 UFS_DIR=""
 
 BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
