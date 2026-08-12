@@ -162,6 +162,17 @@ prep_sfc() {
         run_chgres "$workdir" "./chgres_cube_sfc.log"
         mv "${workdir}/out.sfc.tile${ATM_TILE}.nc" "$SFC_OUT"
         rm -rf "${workdir}"/*.nc
+        
+        (
+        module purge
+        conda_env="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/ufs-arctic"
+        module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
+        conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
+
+        sfc_data_path="${ATM_RUN_DIR}/intercom/"
+        spinup_file="${FIX_DIR}/inputs/land-spinup/${ATM_DST_CASE}/${OCN_RES}/ufs_land_restart.${cycle_year}-${cycle_mon}-${cycle_day}_03-00-00.nc"
+        python replace_land_states.py $sfc_data_path $spinup_file || error_exit "Failed to replace sfc states with land spinup"
+        )
     fi
 }
 
