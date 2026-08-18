@@ -195,7 +195,7 @@ prep_atm() {
     log_info "-> Atmosphere IC files already exist. Skipping."
   else
     log_info "-> Generating atmosphere IC files..."
-    if [ "$ATM_ICTYPE" = "restart_files" ]; then
+    if [ "$ATM_ICTYPE" = "restart_files" ] || [ "$ATM_ICTYPE" = "patch" ]; then
       convert_atm=.true.
       convert_sfc=.false.
       convert_nst=.false.
@@ -209,8 +209,15 @@ prep_atm() {
       input_type="restart"
       tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
       tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
-    
-    elif [ $ATM_ICTYPE = "grib_files" ]; then
+
+      if [ "$ATM_ICTYPE" = "patch" ]; then
+        mkdir -p "$workdir/patch"
+        generate_namelist "$workdir/patch"
+        run_chgres "$workdir/patch" "./chgres_cube_patch.log"
+      fi
+    fi 
+
+    if [ $ATM_ICTYPE = "grib_files" ] || [ "$ATM_ICTYPE" = "patch" ]; then
       convert_atm=.true.
       convert_sfc=.false.
       convert_nst=.false.
@@ -230,13 +237,21 @@ prep_atm() {
       atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
       sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
       varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
-    
-    else
-      error_exit "Unknown or unsupported ATM input type: ${ATM_ICTYPE}"
     fi
   
     generate_namelist "$workdir"
     run_chgres "$workdir" "./chgres_cube_atm.log"
+
+    if [ "$ATM_ICTYPE" = "patch" ]; then
+      SRC="${workdir}/patch/out.atm.tile${ATM_TILE}.nc"
+      DST="${workdir}/out.atm.tile${ATM_TILE}.nc"
+
+      LEV=$(ncdump -h $SRC | awk '$1=="lev" && $2=="=" {print $3}')
+      BEG=$((LEV - 7))
+      END=$((LEV - 1))
+
+      ncks -A -v t -d lev,$START,$END $SRC $DST
+    fi
     
     mv "${workdir}/gfs_ctrl.nc" "${ATM_RUN_DIR}/intercom/gfs_ctrl.nc"
     mv "${workdir}/gfs.bndy.nc" "${ATM_RUN_DIR}/intercom/gfs_bndy.tile${ATM_TILE}.000.nc"
