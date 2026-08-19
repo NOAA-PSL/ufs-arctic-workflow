@@ -168,6 +168,8 @@ prep_sfc() {
       (
       module purge
       conda_env="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/ufs-arctic"
+      module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
+      module load py-requests || error_exit "Failed to load py-requests module."
       module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
       conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
   
@@ -195,7 +197,7 @@ prep_atm() {
     log_info "-> Atmosphere IC files already exist. Skipping."
   else
     log_info "-> Generating atmosphere IC files..."
-    if [ "$ATM_ICTYPE" = "restart_files" ] || [ "$ATM_ICTYPE" = "patch" ]; then
+    if [ "$ATM_ICTYPE" = "restart_files" ]; then
       convert_atm=.true.
       convert_sfc=.false.
       convert_nst=.false.
@@ -210,14 +212,7 @@ prep_atm() {
       tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
       tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
 
-      if [ "$ATM_ICTYPE" = "patch" ]; then
-        mkdir -p "$workdir/patch"
-        generate_namelist "$workdir/patch"
-        run_chgres "$workdir/patch" "./chgres_cube_patch.log"
-      fi
-    fi 
-
-    if [ $ATM_ICTYPE = "grib_files" ] || [ "$ATM_ICTYPE" = "patch" ]; then
+    elif [ $ATM_ICTYPE = "grib_files" ] || [ "$ATM_ICTYPE" = "patch" ]; then
       convert_atm=.true.
       convert_sfc=.false.
       convert_nst=.false.
@@ -234,23 +229,50 @@ prep_atm() {
     #  tracers_input='"spfh","clwmr","o3mr"'
     #  grib2_file_input_grid="gefs.t${cycle_hour}z.pgrb2_combined.0p25.f${FHR3}"
       grib2_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-      atm_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
-      sfc_file_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+      atm_files_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
+      sfc_files_input_grid="gefs.t00z.pgrb2_combined.0p25.f003"
       varmap_file="${UFSUTILS_DIR}/parm/varmap_tables/GFSphys_var_map.txt"
     fi
-  
+
     generate_namelist "$workdir"
     run_chgres "$workdir" "./chgres_cube_atm.log"
 
     if [ "$ATM_ICTYPE" = "patch" ]; then
+      (
+      mkdir -p "$workdir/patch"
+
+      convert_atm=.true.
+      convert_sfc=.false.
+      convert_nst=.false.
+      mosaic_file_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}/${ATM_SRC_CASE}_mosaic.nc"
+      orog_dir_input_grid="${FIX_DIR}/gridfiles/${ATM_SRC_CASE}/${OCN_SRC_GRID}"
+      orog_files_input_grid=${ATM_SRC_CASE}'_oro_data.tile1.nc","'${ATM_SRC_CASE}'_oro_data.tile2.nc","'${ATM_SRC_CASE}'_oro_data.tile3.nc","'${ATM_SRC_CASE}'_oro_data.tile4.nc","'${ATM_SRC_CASE}'_oro_data.tile5.nc","'${ATM_SRC_CASE}'_oro_data.tile6.nc'
+      data_dir_input_grid="${ATM_DATA_DIR}/ics/atm"
+      atm_core_files_input_grid='fv_core.res.tile1.nc","fv_core.res.tile2.nc","fv_core.res.tile3.nc","fv_core.res.tile4.nc","fv_core.res.tile5.nc","fv_core.res.tile6.nc","fv_core.res.nc'
+      atm_tracer_files_input_grid='fv_tracer.res.tile1.nc","fv_tracer.res.tile2.nc","fv_tracer.res.tile3.nc","fv_tracer.res.tile4.nc","fv_tracer.res.tile5.nc","fv_tracer.res.tile6.nc'
+      sfc_files_input_grid='sfc_data.tile1.nc","sfc_data.tile2.nc","sfc_data.tile3.nc","sfc_data.tile4.nc","sfc_data.tile5.nc","sfc_data.tile6.nc'
+      input_type="restart"
+      tracers='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+      tracers_input='"sphum","liq_wat","o3mr","ice_wat","rainwat","snowwat","graupel"'
+      grib2_file_input_grid="NULL"
+      atm_files_input_grid="NULL"
+      sfc_files_input_grid="NULL"
+      varmap_file="NULL"
+
+      generate_namelist "$workdir/patch"
+      run_chgres "$workdir/patch" "./chgres_cube_patch.log"
+
       SRC="${workdir}/patch/out.atm.tile${ATM_TILE}.nc"
       DST="${workdir}/out.atm.tile${ATM_TILE}.nc"
+      ncks -A -v t "$SRC" "$DST"
 
-      LEV=$(ncdump -h $SRC | awk '$1=="lev" && $2=="=" {print $3}')
-      BEG=$((LEV - 7))
-      END=$((LEV - 1))
-
-      ncks -A -v t -d lev,$START,$END $SRC $DST
+      SRC="${workdir}/patch/gfs.bndy.nc"
+      DST="${workdir}/gfs.bndy.nc"
+      ncks -A -v t_top    "$SRC" "$DST"
+      ncks -A -v t_bottom "$SRC" "$DST"
+      ncks -A -v t_left   "$SRC" "$DST"
+      ncks -A -v t_right  "$SRC" "$DST"
+      )
     fi
     
     mv "${workdir}/gfs_ctrl.nc" "${ATM_RUN_DIR}/intercom/gfs_ctrl.nc"
