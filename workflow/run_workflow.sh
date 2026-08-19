@@ -307,6 +307,7 @@ module use ${module_path} || error_exit "Failed to find module path ${module_pat
 module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
 module load nco || error_exit "Failed to load nco module."
 module load cdo || error_exit "Failed to load cdo module."
+module load py-requests || error_exit "Failed to load py-requests module."
 module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
 conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
 
