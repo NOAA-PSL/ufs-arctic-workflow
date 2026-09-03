@@ -262,16 +262,14 @@ prep_atm() {
       generate_namelist "$workdir/patch"
       run_chgres "$workdir/patch" "./chgres_cube_patch.log"
 
-      SRC="${workdir}/patch/out.atm.tile${ATM_TILE}.nc"
-      DST="${workdir}/out.atm.tile${ATM_TILE}.nc"
-      ncks -A -v t "$SRC" "$DST"
-
-      SRC="${workdir}/patch/gfs.bndy.nc"
-      DST="${workdir}/gfs.bndy.nc"
-      ncks -A -v t_top    "$SRC" "$DST"
-      ncks -A -v t_bottom "$SRC" "$DST"
-      ncks -A -v t_left   "$SRC" "$DST"
-      ncks -A -v t_right  "$SRC" "$DST"
+      log_info "-> Patching temperature in IC files"
+      module purge
+      conda_env="/scratch4/BMC/ufs-artic/Kristin.Barton/envs/ufs-arctic"
+      module load stack-oneapi || error_exit "Failed to load stack-oneapi module."
+      module load py-requests || error_exit "Failed to load py-requests module."
+      module load rdhpcs-conda || error_exit "Failed to load rdhpcs-conda module."
+      conda activate ${conda_env} || error_exit "Failed to activate conda environment: ${conda_env}"
+      python replace_temp_states.py "$workdir" "$ATM_TILE" || error_exit "Failed to replace temp states with restart values"
       )
     fi
     

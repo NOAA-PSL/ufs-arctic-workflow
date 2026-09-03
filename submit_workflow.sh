@@ -7,24 +7,32 @@
 SACCT="ufs-artic"       # Account for job submission
 HOURS=3                 # Model forecast length (Max: 240 Hours)
 ATM_RES=(                   # Model resolution (C918 ~11km; C185 ~50km)
-    "C185"
-#    "C918"
+#    "C185"
+    "C918"
 )
 OCN_RES=(
     "ARC12"             
 )
-DATES=(                 # Format: YYYYMMDD
-    "20191028"          # Options: 20191028 | 20200227 | 20200702 | 20200709 | 20200827
-#    "20200227"
-#    "20200702"
-#    "20200709"
-#    "20200827"
+DATES=(  "20200227"  # Format: YYYYMMDD - See all available dates: /scratch4/BMC/ufs-artic/fix/inputs/GEFSv13-reforecasts/
+#        "20190912" "20190916" "20190919" "20190923" "20190926" "20190930"
+#        "20191003" "20191007" "20191010" "20191014" "20191017" "20191021" "20191024" "20191028" "20191031" "20191104"
+#        "20191107" "20191111" "20191114" "20191118" "20191121" "20191125" "20191128" 
+#        "20191202" "20191205" "20191209" "20191212"
+#        "20200116" "20200120" "20200123" "20200127" "20200130"
+#        "20200203" "20200206" "20200213" "20200220" "20200227"
+#        "20200305" "20200312" "20200319" "20200326"
+#        "20200402" "20200409" "20200416" "20200423" "20200430"
+#        "20200611" "20200618" "20200625"
+#        "20200702" "20200709" "20200716" "20200723" "20200730"
+#        "20200806" "20200813" "20200820" "20200827"
+#        "20200903" "20200910" "20200917" "20200924"
+#        "20201001" "20201008"
 )
 # Optional: Specify pre-compiled directory. Leave blank to run from current directory.
 #UFS_DIR="/scratch4/BMC/ufs-artic/Kristin.Barton/repos/kristinbarton/ufs-arctic-workflow/build/Cc522566f/ufs-weather-model/"       
 UFS_DIR=""
 
-BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
+BASE_RUN_DIR="/scratch4/BMC/${SACCT}/${USER}/stmp/" # Output will go in ${BASE_RUN_DIR}/${JOB_NAME}
 
 # ================================= #
 # Other SLURM Options               #

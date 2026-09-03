@@ -1,11 +1,12 @@
 #!/bin/bash
 #SBATCH -e err
 #SBATCH -o out
+#SBATCH --exclusive
 #SBATCH --account={{SACCT}}
 #SBATCH --qos=batch
 #SBATCH --nodes={{NODES}}
 #SBATCH --ntasks-per-node={{NTASKSPN}}
-#SBATCH --time=15:00
+#SBATCH --time=3:00:00
 #SBATCH --job-name="{{ATM_RES}}.{{OCN_RES}}.{{YEAR}}{{MONTH}}{{DAY}}_{{NHRS}}HR"
 
 set -eux
