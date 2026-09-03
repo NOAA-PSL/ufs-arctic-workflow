@@ -33,7 +33,7 @@ case "$OCN_RES" in
     NJGLOBAL=696
     DTBT=-0.9
     TOPO_FILE="patch.ocean_topog.nc"
-    OCNPETS=80
+    OCNPETS=150
     ICEPETS=40
     ICEBLOCKX=108
     ICEBLOCKY=87

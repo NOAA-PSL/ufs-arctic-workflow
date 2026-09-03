@@ -17,19 +17,15 @@ MED_model:                      cmeps
 MED_petlist_bounds:             {{MEDMIN}} {{MEDMAX}}
 MED_omp_num_threads:            1
 MED_attributes::
-  Verbosity = 0
-  Diagnostic = 0
   ATM_model = fv3
   OCN_model = mom6
   MED_model = cmeps
   coupling_mode = ufs.arctic
-  history_n = 3
-  history_option = nhours
-  history_ymd = -999
   normalization = none
   merge_type = copy
   pio_rearranger = box
   ocn_use_data_first_import = .true.
+  history_option = none
   write_dststatus = true
 ::
 
@@ -38,13 +34,7 @@ ATM_model:                      fv3
 ATM_petlist_bounds:             {{ATMMIN}} {{ATMMAX}}
 ATM_omp_num_threads:            1
 ATM_attributes::
-  Verbosity = 0
-  Diagnostic = 0
   mesh_atm = unset
-  stop_n = 3
-  stop_option = nhours
-  stop_ymd = -999
-  write_restart_at_endofrun = .true.
 ::
 
 # OCN #
@@ -52,10 +42,6 @@ OCN_model:                      mom6
 OCN_petlist_bounds:             {{OCNMIN}} {{OCNMAX}}
 OCN_omp_num_threads:            1
 OCN_attributes::
-  Verbosity = 0
-  Diagnostic = 0
-  history_n = 3
-  history_option = nhours
   merge_import = .false.
   skip_first_import = .false. #.true.
   use_mommesh = true
@@ -68,16 +54,10 @@ ICE_model:                      cice6
 ICE_petlist_bounds:             {{ICEMIN}} {{ICEMAX}}
 ICE_omp_num_threads:            1
 ICE_attributes::
-  Verbosity = 10
-  Diagnostic = 10
-  DumpFields = true
   ProfileMemory = false
   OverwriteSlice = true
   mesh_ice = INPUT/mom6_arctic_mesh.nc
   eps_imesh = 2.5e-1
-  stop_n = 12
-  stop_option = nhours
-  stop_ymd = -999
 
 ::
 
@@ -126,8 +106,8 @@ ALLCOMP_attributes::
   ScalarFieldName = cpl_scalars
   start_type = startup
   case_name = ufs.arctic
-  restart_n = 3
-  restart_option = nhours
+  restart_n = 10
+  restart_option = none
   restart_ymd = -999
   write_restart_at_endofrun = .false.
   dbug_flag = 0
